@@ -1,5 +1,5 @@
 /* 
-*  File:    CPlusPlusBuildBuilder.cpp
+*  File:    DevProjectBuilder.cpp
 *  Author:  Chris Palazzolo
 *  Date:    8/3/2017
 *
@@ -99,7 +99,9 @@ void CombineStrings(char *Str, int SizeOfStr, char *SubStr, int StartIndex)
     int CombinedStrIndex = 0;
     char CombinedStr[256];
 
-    while(Str[StrIndex] != '\0' && Str[StrIndex] != '\n')
+    bool32 EndOfStr = false;
+
+    while(!EndOfStr)
     {
         if(StrIndex == StartIndex)
         {
@@ -114,8 +116,16 @@ void CombineStrings(char *Str, int SizeOfStr, char *SubStr, int StartIndex)
         }
 
         CombinedStr[CombinedStrIndex] = Str[StrIndex];
-        ++StrIndex;
-        ++CombinedStrIndex;
+
+        if(Str[StrIndex] == '\0' || Str[StrIndex] == '\n')
+        {
+            EndOfStr = true;
+        }
+        else
+        {
+            ++StrIndex;
+            ++CombinedStrIndex;
+        }
     }
 
     if(CombinedStr)
@@ -123,6 +133,11 @@ void CombineStrings(char *Str, int SizeOfStr, char *SubStr, int StartIndex)
         _snprintf_s(Str, SizeOfStr, SizeOfStr, "%s", CombinedStr);
     }
 }
+
+// void AppendString(char *Str, int SizeOfStr, char *StrToAppend)
+// {
+//     int strcspn(Str)
+// }
 
 void StrSpecifierSub(char *Str, int SizeOfStr, char *SubText)
 {
