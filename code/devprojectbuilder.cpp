@@ -134,10 +134,39 @@ void CombineStrings(char *Str, int SizeOfStr, char *SubStr, int StartIndex)
     }
 }
 
-// void AppendString(char *Str, int SizeOfStr, char *StrToAppend)
-// {
-//     int strcspn(Str)
-// }
+void AppendString(char *Str, int SizeOfStr, char *AppendStr, int StartIndexOfAppendStr)
+{
+    if(Str != NULL)
+    {
+        char NewStr[256];
+        _snprintf_s(NewStr, sizeof(NewStr), "%s", Str);
+        size_t EndOfStr = strcspn(NewStr, "\n");
+        
+        if(EndOfStr <= 0)
+        {
+            EndOfStr = strcspn(NewStr, "\0");
+        }
+
+        int i = StartIndexOfAppendStr;
+        bool32 Done = false;
+
+        while(!Done)
+        {
+            NewStr[EndOfStr] = AppendStr[i];
+
+            if(AppendStr[i] == '\0')
+            {
+
+                Done = true;
+            }
+
+            ++i;
+            ++EndOfStr;
+        }
+
+        _snprintf_s(Str, SizeOfStr, SizeOfStr, "%s", NewStr);
+    }
+}
 
 void StrSpecifierSub(char *Str, int SizeOfStr, char *SubText)
 {
@@ -157,7 +186,7 @@ void StrSpecifierSub(char *Str, int SizeOfStr, char *SubText)
                     {
                         if(i == 0)
                         {
-                            CombineStrings(Str, SizeOfStr, SubText, i);
+                            AppendString(Str, SizeOfStr, SubText, i + 2);
                             MatchedOrEnd = true;
                         }
                     }break;
@@ -622,13 +651,14 @@ void AskQuestion(char *Question, char *Detail, int SizeOfDetail)
     while(!Answered);
 }
 
-void AskQuestion(char *Question, int SizeOfQuestion, char *Detail, int SizeOfDetail, char *DefaultAnswer)
+void AskQuestion(char *QuestionToAsk, int SizeOfQuestion, char *Detail, int SizeOfDetail, char *DefaultAnswer)
 {
     bool32 HasDefault = (DefaultAnswer != NULL && DefaultAnswer[0] != '\0');
     bool32 Answered = false;
+    char Question[256];
     char *FormatStr = (HasDefault) ? "%s (Default: %s): " : "%s: ";
 
-    _snprintf_s(Question, SizeOfQuestion, SizeOfQuestion, FormatStr, Question, DefaultAnswer);
+    _snprintf_s(Question, sizeof(Question), FormatStr, QuestionToAsk, DefaultAnswer);
 
     do
     {
@@ -637,11 +667,6 @@ void AskQuestion(char *Question, int SizeOfQuestion, char *Detail, int SizeOfDet
 
         if(Detail != NULL && Detail[0] != '\n')
         {
-            if(HasDefault)
-            {
-                StrSpecifierSub(Detail, SizeOfDetail, DefaultAnswer);
-            }
-            
             Answered = true;
         }
         else if(HasDefault)
@@ -649,6 +674,7 @@ void AskQuestion(char *Question, int SizeOfQuestion, char *Detail, int SizeOfDet
             _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", DefaultAnswer);
             Answered = true;
         }
+
     }
     while(!Answered);
 }
@@ -686,7 +712,7 @@ void GetRootPath(char *Detail, int SizeOfDetail, char *Default, int SizeOfDefaul
     while(!Answered)
     {
         AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
-        NewlineIndex = strcspn(Detail, "\n");
+		NewlineIndex = strcspn(Detail, "\n");
 
         if(NewlineIndex >= 2) // at least has a drive letter and ':'...  'C:' should be acceptable
         {
@@ -695,12 +721,31 @@ void GetRootPath(char *Detail, int SizeOfDetail, char *Default, int SizeOfDefaul
                 if(Detail[NewlineIndex - 1] != 92 && Detail[NewlineIndex - 1] != 47)
                 {
                     Detail[NewlineIndex] = 92; // back slash
+					++NewlineIndex;
+					if (NewlineIndex < SizeOfDetail)
+					{
+						Detail[NewlineIndex] = 0;
+					}
                 }
                 else
                 {
                     Detail[NewlineIndex] = 0;
                 }
 
+                Answered = true;
+            }
+            else if(Default != NULL && Default[0] != '\0' && strcspn(Detail, "{a}") == 0)
+            {
+				Detail[NewlineIndex] = 92;
+				++NewlineIndex;
+				if (NewlineIndex < SizeOfDetail)
+				{
+					Detail[NewlineIndex] = 0;
+                }
+                char NewStr[256];
+                _snprintf_s(NewStr, sizeof(NewStr), "%s", Default);
+                AppendString(NewStr, sizeof(NewStr), Detail, 3);
+                _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", NewStr);
                 Answered = true;
             }
         }
@@ -783,9 +828,14 @@ void GetLinkerFlags(char *Answer, int SizeOfAnswer, char *Default)
 void AskStartupQuestions(project_details *Details, default_inputs *Defaults)
 {
     GetProjectName(Details->ProjectName, sizeof(Details->ProjectName));
+    
     SetProjectFileNames(Details);
+    
     GetRootPath(Details->Paths.RootPath, sizeof(Details->Paths.RootPath), Defaults->RootPath, sizeof(Defaults->RootPath));
     GetSubStrDriveLetter(Details->SubStDriveLetter, Defaults->SubStDriveLetter);
+    
+    SetPaths(Details);
+
     GetCompilerPath(Details->CompilerPath, sizeof(Details->CompilerPath), Defaults->Compiler);
     GetIDECMLCommand(Details->IDECommand, sizeof(Details->IDECommand), Defaults->EditorCMD);
 }
@@ -879,8 +929,6 @@ void CreateProject(project_details *ProjectDetails, default_inputs *Defaults)
     {
         AskStartupQuestions(ProjectDetails, Defaults);
         AskBuildQuestions(ProjectDetails, Defaults);
-        
-        SetPaths(ProjectDetails);
 
         ProjectOption = GetProjectConfirmation(ProjectDetails);
         if(ProjectOption != 2)
