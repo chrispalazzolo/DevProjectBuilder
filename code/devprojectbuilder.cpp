@@ -168,8 +168,9 @@ void AppendString(char *Str, int SizeOfStr, char *AppendStr, int StartIndexOfApp
     }
 }
 
-void StrSpecifierSub(char *Str, int SizeOfStr, char *SubText)
+void StrSpecifierSub(char *Str, int SizeOfStr, project_details *Details)
 {
+    //TODO: Keep looping until Str has been checked all the way through.
     if(Str != NULL)
     {
         bool32 MatchedOrEnd = false;
@@ -182,19 +183,27 @@ void StrSpecifierSub(char *Str, int SizeOfStr, char *SubText)
                 char Identifier = Str[i+1];
                 switch(Identifier)
                 {
-                    case 'a': //append
-                    {
-                        if(i == 0)
-                        {
-                            AppendString(Str, SizeOfStr, SubText, i + 2);
-                            MatchedOrEnd = true;
-                        }
-                    }break;
+                    // case 'a': //append
+                    // {
+                    //     if(i == 0)
+                    //     {
+                    //         AppendString(Str, SizeOfStr, SubText, i + 2);
+                    //         MatchedOrEnd = true;
+                    //     }
+                    // }break;
                     case 'r': //root path
                     {
                         
                     }break;
                     case 'p': // project path
+                    {
+
+                    }break;
+                    case 'f': // path to cpp file
+                    {
+
+                    }break;
+                    case 'h': // path to header file
                     {
 
                     }break;
@@ -838,6 +847,7 @@ void AskStartupQuestions(project_details *Details, default_inputs *Defaults)
 
     GetCompilerPath(Details->CompilerPath, sizeof(Details->CompilerPath), Defaults->Compiler);
     GetIDECMLCommand(Details->IDECommand, sizeof(Details->IDECommand), Defaults->EditorCMD);
+    StrSpecifierSub(Details->IDECommand, sizeof(Details->IDECommand), Defaults);
 }
 
 void AskBuildQuestions(project_details *Details, default_inputs *Defaults)
