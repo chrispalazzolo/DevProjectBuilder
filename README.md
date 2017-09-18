@@ -26,11 +26,11 @@ When creating a project with defaults set...
  - Using the {a} specifier followed by text will append the value to the end of the default value.  This applies to only few questions.
 
 String replacement specifiers, if any of the specifiers listed below are placed in some of the inputs they will be replaced with the string value they represent.  These are good for when you set your default for the CMD of your editor (Example: code -n {p} and the project path is "C:\Dev\MyProject" will translate to code -n C:\Dev\MyProject).
-{r} - Replaced with the root path provided by the user or set as default.
-{p} - Replaced with the project path.
-{f} - Replaced with the path to the generated project cpp file.
-{h} - Replaced with the path to the generated project header file.
-{a} - Append. Specifies that the following input gets appened to the default value. Example: Enter root path (Default: C:\Dev\): {a}MyProject "enter", the root path will be C:\Dev\MyProject
+- {r} - Replaced with the root path provided by the user or set as default.
+- {p} - Replaced with the project path.
+- {f} - Replaced with the path to the generated project cpp file.
+- {h} - Replaced with the path to the generated project header file.
+- {a} - Append. Specifies that the following input gets appened to the default value. Example: Enter root path (Default: C:\Dev\): {a}MyProject "enter", the root path will be C:\Dev\MyProject
 
 Parameters
 ----------
