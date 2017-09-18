@@ -11,7 +11,7 @@ The user has the ability to create/set defaults for those commonly used environm
 
 Installation
 ------------
->Pull down the project and build. If building from the build.bat file some tweaks will need to be made to the startup.bat and build.bat to match your environment.  Run the startup.bat file first as it runs the subst command to associate the project root path to the V drive which the build.bat file uses.
+Pull down the project and build. If building from the build.bat file some tweaks will need to be made to the startup.bat and build.bat to match your environment.  Run the startup.bat file first as it runs the subst command to associate the project root path to the V drive which the build.bat file uses.
 
 Usage:
 -------
