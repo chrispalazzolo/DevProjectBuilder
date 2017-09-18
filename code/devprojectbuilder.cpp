@@ -92,45 +92,32 @@ void StripSpaces(char *Str, int SizeOfStr)
     }
 }
 
-void CombineStrings(char *Str, int SizeOfStr, char *SubStr, int StartIndex)
+void InsertSubString(char *Str, int SizeOfStr, int StartReplaceIndex, char *SubStr, int SizeOfSubStr)
 {
-    int StrIndex = 0;
-    int SubStrIndex = 0;
-    int CombinedStrIndex = 0;
-    char CombinedStr[256];
-
-    bool32 EndOfStr = false;
-
-    while(!EndOfStr)
+    if(Str != NULL && SubStr != NULL)
     {
-        if(StrIndex == StartIndex)
-        {
-            while(SubStr[SubStrIndex] != '\0' && SubStr[SubStrIndex] != '\n')
+        size_t StrLen = strcspn(Str, "\0");
+        size_t SubStrLen = strcspn(SubStr, "\0");
+
+		if ((StrLen + SubStrLen) < SizeOfStr)
+		{
+            char NewStr[256];
+            _snprintf_s(NewStr, sizeof(NewStr), StartReplaceIndex, "%s", Str);
+			_snprintf_s(NewStr, sizeof(NewStr), "%s%s", NewStr, SubStr);
+            
+            StartReplaceIndex += 2;
+            int NewStrIndex = (int)(StartReplaceIndex + SubStrLen);
+            bool32 EndOfStr = false;
+            while(!EndOfStr)
             {
-                CombinedStr[CombinedStrIndex] = SubStr[SubStrIndex];
-                ++CombinedStrIndex;
-                ++SubStrIndex;
+                EndOfStr = (Str[StartReplaceIndex] == 0);
+                NewStr[NewStrIndex] = Str[StartReplaceIndex];
+                ++NewStrIndex;
+                ++StartReplaceIndex;
             }
 
-            StrIndex += 3;
-        }
-
-        CombinedStr[CombinedStrIndex] = Str[StrIndex];
-
-        if(Str[StrIndex] == '\0' || Str[StrIndex] == '\n')
-        {
-            EndOfStr = true;
-        }
-        else
-        {
-            ++StrIndex;
-            ++CombinedStrIndex;
-        }
-    }
-
-    if(CombinedStr)
-    {
-        _snprintf_s(Str, SizeOfStr, SizeOfStr, "%s", CombinedStr);
+            _snprintf_s(Str, SizeOfStr, SizeOfStr, "%s", NewStr);
+		}
     }
 }
 
@@ -170,53 +157,44 @@ void AppendString(char *Str, int SizeOfStr, char *AppendStr, int StartIndexOfApp
 
 void StrSpecifierSub(char *Str, int SizeOfStr, project_details *Details)
 {
-    //TODO: Keep looping until Str has been checked all the way through.
     if(Str != NULL)
     {
-        bool32 MatchedOrEnd = false;
+        bool32 EndOfStr = false;
         int i = 0;
 
-        while(!MatchedOrEnd)
+        while(!EndOfStr)
         {
-            if(Str[i] == 123 && (((i+2) < SizeOfStr) && Str[i+2] == 125))
+            if(Str[i] == 123 && (((i+2) < SizeOfStr) && Str[i+2] == 125)) // if {*}
             {
                 char Identifier = Str[i+1];
                 switch(Identifier)
                 {
-                    // case 'a': //append
-                    // {
-                    //     if(i == 0)
-                    //     {
-                    //         AppendString(Str, SizeOfStr, SubText, i + 2);
-                    //         MatchedOrEnd = true;
-                    //     }
-                    // }break;
                     case 'r': //root path
                     {
-                        
+                        InsertSubString(Str, SizeOfStr, i, Details->Paths.RootPath, sizeof(Details->Paths.RootPath));
                     }break;
                     case 'p': // project path
                     {
-
+                        InsertSubString(Str, SizeOfStr, i, Details->Paths.ProjectPath, sizeof(Details->Paths.ProjectPath));
                     }break;
                     case 'f': // path to cpp file
                     {
-
+                        char NewStr[256];
+                        _snprintf_s(NewStr, sizeof(NewStr), "%s%s.cpp", Details->Paths.CodePath, Details->ProjectFileNameLower);
+                        InsertSubString(Str, SizeOfStr, i, NewStr, sizeof(NewStr));
                     }break;
                     case 'h': // path to header file
                     {
-
-                    }break;
-                    case 'c': // compiler flags
-                    {
-
+                        char NewStr[256];
+                        _snprintf_s(NewStr, sizeof(NewStr), "%s%s.h", Details->Paths.CodePath, Details->ProjectFileNameLower);
+                        InsertSubString(Str, SizeOfStr, i, NewStr, sizeof(NewStr));
                     }break;
                 }
             }
 
             ++i;
 
-            MatchedOrEnd = ((Str[i] != '\0' && Str[i] != '\n') && i < SizeOfStr);
+            EndOfStr = (Str[i] == '\0' || i >= SizeOfStr);
         }
     }
 }
@@ -820,18 +798,32 @@ void GetIDECMLCommand(char *Detail, int SizeofDetail, char *Default)
     Detail[strcspn(Detail, "\n")] = 0;
 }
 
-void GetCompilerFlags(char *Answer, int SizeOfAnswer, char *Default)
+void GetCompilerFlags(char *Detail, int SizeOfDetail, char *Default)
 {
     char Question[256] = "Enter Compiler Flags";
-    AskQuestion(Question, sizeof(Question), Answer, SizeOfAnswer, Default);
-    Answer[strcspn(Answer, "\n")] = 0;
+    AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
+    Detail[strcspn(Detail, "\n")] = 0;
+    if(Default != NULL && Default[0] != '\0' && strcspn(Detail, "{a}") == 0)
+    {
+        char NewStr[256];
+        _snprintf_s(NewStr, sizeof(NewStr), "%s", Default);
+        AppendString(NewStr, sizeof(NewStr), Detail, 3);
+        _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", NewStr);
+    }
 }
 
-void GetLinkerFlags(char *Answer, int SizeOfAnswer, char *Default)
+void GetLinkerFlags(char *Detail, int SizeOfDetail, char *Default)
 {
     char Question[256] = "Enter Linker Flags";
-    AskQuestion(Question, sizeof(Question), Answer, SizeOfAnswer, Default);
-    Answer[strcspn(Answer, "\n")] = 0;
+    AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
+    Detail[strcspn(Detail, "\n")] = 0;
+    if(Default != NULL && Default[0] != '\0' && strcspn(Detail, "{a}") == 0)
+    {
+        char NewStr[256];
+        _snprintf_s(NewStr, sizeof(NewStr), "%s", Default);
+        AppendString(NewStr, sizeof(NewStr), Detail, 3);
+        _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", NewStr);
+    }
 }
 
 void AskStartupQuestions(project_details *Details, default_inputs *Defaults)
@@ -847,7 +839,7 @@ void AskStartupQuestions(project_details *Details, default_inputs *Defaults)
 
     GetCompilerPath(Details->CompilerPath, sizeof(Details->CompilerPath), Defaults->Compiler);
     GetIDECMLCommand(Details->IDECommand, sizeof(Details->IDECommand), Defaults->EditorCMD);
-    StrSpecifierSub(Details->IDECommand, sizeof(Details->IDECommand), Defaults);
+    StrSpecifierSub(Details->IDECommand, sizeof(Details->IDECommand), Details);
 }
 
 void AskBuildQuestions(project_details *Details, default_inputs *Defaults)
@@ -976,8 +968,6 @@ void CreateProject(project_details *ProjectDetails, default_inputs *Defaults)
         {
             printf_s("Failed!\n");
         }
-
-        //TODO: Add saved defaults, No sure what to save as of yet
         
         printf_s("Creating CMD Shortcut To Desktop... ");
     
@@ -1170,9 +1160,6 @@ void MainMenu(project_details *Details, default_inputs *Defaults, bool32 *IsDefa
 int main(void)
 {
     //TODO: Finish Help display.
-    //TODO: Test Create project with defaults
-    //TODO: Finish String Specifier replacement
-
     project_details ProjectDetails = {};
     default_inputs Defaults = {};
     char *DefaultsFileName = "devprojectbulider.dft";
