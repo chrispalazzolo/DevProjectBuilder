@@ -201,26 +201,18 @@ void StrSpecifierSub(char *Str, int SizeOfStr, project_details *Details)
 // === End of String Functions ==================================================================
 
 // === File Functions ===========================================================================
-HRESULT CreateLauncherCMDShortcut(project_details *Details) 
-{ 
-    HRESULT Result;
-    
-    char DKPath[MAX_PATH];
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, 0, DKPath);
-#else
-    SHGetKnownFolderPath(FOLDERID_Desktop, 0, NULL, DKPath);
-#endif
-    _snprintf_s(DKPath, sizeof(DKPath), "%s\\%s.lnk", DKPath, Details->ProjectFolderName);
+void GetShortCutInfo(cmd_shortcut_info *Info, project_details *Details)
+{
+    Info->ObjPath = "C:\\Windows\\System32\\cmd.exe";
+    _snprintf_s(Info->Description, sizeof(Info->Description), "CMD and Editor Launcher for project %s", Details->ProjectName);
+    _snprintf_s(Info->Arguments, sizeof(Info->Arguments), "/k %sstartup.bat", Details->Paths.MiscPath);
+    GetDesktopPath(Info->DesktopPath);
+    _snprintf_s(Info->SaveFile, sizeof(Info->SaveFile), "%s\\%s.lnk", Info->DesktopPath, Details->ProjectFolderName);
+}
 
-    LPCSTR PathToSaveLink = (LPCSTR)DKPath;
-    LPCSTR PathToObj = "C:\\Windows\\System32\\cmd.exe";
-    char DescriptionBuffer[MAX_PATH];
-    _snprintf_s(DescriptionBuffer, sizeof(DescriptionBuffer), "CMD and Editor Launcher for project %s", Details->ProjectName);
-    LPCSTR LinkDescription = (LPCSTR)DescriptionBuffer;
-    char ArgBuffer[MAX_PATH];
-    _snprintf_s(ArgBuffer, sizeof(ArgBuffer), "/k %sstartup.bat", Details->Paths.MiscPath);
-    LPCSTR LinkArguments = (LPCSTR)ArgBuffer;
+HRESULT CreateLauncherCMDShortcut(project_details *Details)
+{ 
+    HRESULT Result; 
     void *PVReserved = NULL;
 
     Result = CoInitialize(PVReserved);
@@ -232,13 +224,16 @@ HRESULT CreateLauncherCMDShortcut(project_details *Details)
         Result = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&ShellLink);
         
         if (SUCCEEDED(Result))
-        {
-            IPersistFile* PersistFile;
-     
-            ShellLink->SetPath(PathToObj);
-            ShellLink->SetArguments(LinkArguments);
-            ShellLink->SetDescription(LinkDescription);
+        {    
+            cmd_shortcut_info Info = {};
+            GetShortCutInfo(&Info, Details);
+            
+            ShellLink->SetPath(Info.ObjPath);
+            ShellLink->SetArguments(Info.Arguments);
+            ShellLink->SetDescription(Info.Description);
     
+            IPersistFile* PersistFile;
+
             Result = ShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&PersistFile);
     
             if (SUCCEEDED(Result))
@@ -246,10 +241,7 @@ HRESULT CreateLauncherCMDShortcut(project_details *Details)
                 WCHAR UnicodeStr[MAX_PATH];
     
                 // Ensure that the string is Unicode.
-                MultiByteToWideChar(CP_ACP, 0, PathToSaveLink, -1, UnicodeStr, MAX_PATH);
-
-                // Add code here to check return value from MultiByteWideChar 
-                // for success.
+                MultiByteToWideChar(CP_ACP, 0, Info.SaveFile, -1, UnicodeStr, MAX_PATH);
     
                 Result = PersistFile->Save(UnicodeStr, TRUE);
 				
@@ -422,6 +414,15 @@ bool32 GetDefaultsFromFile(default_inputs *Defaults, char *FileName)
 // === End Files Functions =====================================================================
 
 // === Util Functions ==========================================================================
+void GetDesktopPath(char *Path)
+{
+#ifdef _WIN32
+    SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, 0, Path);
+#else
+    SHGetKnownFolderPath(FOLDERID_Desktop, 0, NULL, Path);
+#endif
+}
+
 int CreateDir(char *Path)
 {
     int Result = 0; //0 - error, 1 - success, EEXIST = 17 - exists
@@ -613,7 +614,7 @@ void PrintDefaultDetails(default_inputs *Defaults)
     printf_s("Editor Command Line: %s\n", Defaults->EditorCMD);
 }
 
-void DisplayHelp()
+void DisplayHelp(void)
 {
     printf_s("\n>>> Help\n");
     printf_s("This part still needs to be completed!!!\n");
