@@ -50,6 +50,7 @@ Yes, I know about string.h but what is the fun in that?...
 Would like TODOs
 ----------------
 - The ability to save multiple defaults files.
+- The ability to pass args in the command line to quickly create projects
 - Make it more generalized development and not so C/C++ focused.
 - User specified file templates for generated project files.
 - Multi-Platform (MacOS and Linux)

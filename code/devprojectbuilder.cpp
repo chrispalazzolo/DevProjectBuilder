@@ -590,7 +590,7 @@ void PrintPaths(project_paths *Paths)
 
 void PrintProjectDetails(project_details *Details)
 {
-    printf_s("\n>>> Project Details <<<\n");
+    printf_s("\n----- Project Details -----\n");
     printf_s("Project Name: %s\n", Details->ProjectName);
     printf_s("Root Path: %s\n", Details->Paths.RootPath);
 	printf_s("Project Path: %s\n", Details->Paths.ProjectPath);
@@ -606,18 +606,50 @@ void PrintProjectDetails(project_details *Details)
 
 void PrintDefaultDetails(default_inputs *Defaults)
 {
-    printf_s("\n>>> Default Details <<<\n");
-    printf_s("Root Path: %s\n", Defaults->RootPath);
-    printf_s("Compiler Path: %s\n", Defaults->Compiler);
-    printf_s("Compiler Flags: %s\n", Defaults->CompilerFlags);
-    printf_s("Linker Flags: %s\n", Defaults->LinkerFlags);
+    printf_s("\n----- Default Details -----\n");
+    printf_s("Root Path: %s\n\n", Defaults->RootPath);
+    printf_s("Compiler Path: %s\n\n", Defaults->Compiler);
+    printf_s("Compiler Flags: %s\n\n", Defaults->CompilerFlags);
+    printf_s("Linker Flags: %s\n\n", Defaults->LinkerFlags);
     printf_s("Editor Command Line: %s\n", Defaults->EditorCMD);
 }
 
 void DisplayHelp(void)
 {
-    printf_s("\n>>> Help\n");
-    printf_s("This part still needs to be completed!!!\n");
+    printf_s("\n---- Help ----\n\n");
+    printf_s("DevProjectBuilder - Is an application which creates a project (C++ currently) based on given inputs or user saved defaults. It will create a directory with the name of the provide project name at the location provided but the user. In the project directory two directories are create, code and misc.  It will also create a build.bat (stored in the code dir) and startup.bat (stored in the misc dir) with user provided inputs.  It will also generate a .cpp and .h files (both stored in the code dir) named after the project name and a CMD shortcut on your desktop which points and runs the startup.bat file.\n\n");
+    printf_s("Create Project: Choose the \"Create Project\" option from Main Menu.\n");
+    printf_s("  No defaults   - If you do not have any defaults save when creating a project just follow the prompts filling out the\n                  information, then confirm to create the project.\n");
+    printf_s("  With defaults - With each prompted if there is a default saved for that prompt, the default will appear at the end\n                  of the prompt.  You have the following choices...\n\n");
+    printf_s("    Use default          - Hit enter\n");
+    printf_s("    Override default     - Enter a value and hit enter. What you enter will be used over the default value.\n");
+    printf_s("    Appending to default - Certain prompts allow you append to a default. To append start your input with\n                           '{a}' then the value you want to append.\n");
+    printf_s("                           Example: Enter root path (Default: C:\\MyDirectory): {a}MySubDirectory sets the value\n                                    to C:\\MyDirectory\\MySubDirectory\n\n");
+    printf_s("Defaults: Choose the \"Defaults\" option from the Main Menu.\n");
+    printf_s("  No defaults saved: Only options available, Save or return to Main Menu.\n");
+    printf_s("    Save: Follow the prompts, for anything you don't want a default saved, just hit enter.\n");
+    printf_s("    Special string replacement identifiers:  While entering defaults you have the option to place\n                                             special identifiers to be replaced when a project is created using defaults.\n\n");
+    printf_s("    {r} : Inserts the root path provided\n");
+    printf_s("    {p} : Inserts the project path\n");
+    printf_s("    {f} : Inserts the path to the generated cpp file.\n");
+    printf_s("    {h} : Inserts the path to the generated header file.\n\n");
+    printf_s("    Example: Enter editor's command line command: code -n {p} - Saves as code -n {p}, if project path is\n             C:\\MyDevDir\\MyProject when a project is created: code -n C:\\MyDevDir\\MyProject.\n\n");
+    printf_s("  Default already saved: Options available are View, Change, Delete or return to Main Menu.\n");
+    printf_s("    View: Displays the currently saved default.\n");
+    printf_s("    Change: Same process as saving defaults.  You will run through the default prompts.\n");
+    printf_s("    Delete: Removes all of your defaults.\n\n");
+    printf_s("Help: Well you're reading them now...\n\n");
+    printf_s("Quit: Exits the program.\n\n");
+    printf_s("After you created a project...\n");
+    printf_s("There is a project directory (named after the project name) in the provided root directory.\n");
+    printf_s("Inside the project directory:\n");
+    printf_s("\"code\" directory which contains build.bat, <projectname>.cpp, <projectname>.h.\n");
+    printf_s("\"misc\" directory which contains startup.bat.\n");
+    printf_s("build.bat - A bat file with commands which calls the compiler provided by the user with given flags also provided by the user.\n");
+    printf_s("startup.bat - A bat file with commands to run the subst command, calls the compiler and runs the given editor command.\n");
+    printf_s("<projectname>.cpp - A cpp file template/stub.\n");
+    printf_s("<projectname>.h - A header file template/stub.\n\n");
+    printf_s("CMD shortcut saved to your desktop - This shortcut points to the startup.bat file and runs it.\n\n");
 }
 // === End Util Functions ================================================================================
 
@@ -871,7 +903,7 @@ int GetProjectConfirmation(project_details *Details)
 
     while(!Answered)
     {
-        printf_s(">>> Build Project?\n  1 -Yes\n  2 -No, Redo\n  0 -No, Return to Main Menu\n\n> ");
+        printf_s(">Build Project? 1 -Yes | 2 -No, Redo | 0 -No, Return to Main Menu : ");
 		if(fgets(Input, sizeof(Input), stdin))
 		{
             size_t InputCount = strcspn(Input, "\n");
@@ -901,7 +933,7 @@ int GetDefaultConfirmation(default_inputs *Defaults)
 
     while(!Answered)
     {
-        printf_s("\n>>> Save Defaults?\n  1 -Yes\n  2 -No, Redo\n  0 -No, Return to Defaults Menu\n\n> ");
+        printf_s("\n>Save Defaults? 1 -Yes | 2 -No, Redo | 0 -No, Return to Defaults Menu : ");
 		if(fgets(Input, sizeof(Input), stdin))
 		{
             size_t InputCount = strcspn(Input, "\n");
@@ -926,7 +958,7 @@ void CreateProject(project_details *ProjectDetails, default_inputs *Defaults)
     bool32 Redo = true;
     int ProjectOption = 0;
 
-    printf_s("\n>>> Create A Project <<<\n");
+    printf_s("\n----- Create A Project -----\n");
     
     do
     {
@@ -942,7 +974,7 @@ void CreateProject(project_details *ProjectDetails, default_inputs *Defaults)
 
     if(ProjectOption == 1)
     {
-        printf_s("\n>>> Creating Project...\n");
+        printf_s("\n Creating Project...\n");
         printf_s("Creating Directories...\n");
         CreateProjectDirectories(&ProjectDetails->Paths);
     
@@ -991,7 +1023,7 @@ bool32 CreateDefaults(default_inputs *Defaults, char *DefaultsFileName)
     bool32 Redo = true;
     int DefaultOption = 0;
     
-    printf_s("\n>>> Create Defaults <<<\n");
+    printf_s("\n----- Create Defaults -----\n");
 
     do
     {
@@ -1007,7 +1039,7 @@ bool32 CreateDefaults(default_inputs *Defaults, char *DefaultsFileName)
 
     if(DefaultOption == 1)
     {
-        printf_s("\n>>> Saving Defaults... ");
+        printf_s("\n Saving Defaults... ");
         if(SaveDefaults(Defaults, DefaultsFileName))
         {
             printf_s("Success!\n");
@@ -1036,24 +1068,22 @@ void DefaultsMenu(default_inputs *Defaults, bool32 *HasDefaults, char *DefaultsF
 
     do
     {
-        printf_s("\n>>> Defaults Options:\n");
+        printf_s("\n>Defaults Options: ");
         if(*HasDefaults)
         {
-            printf_s("  1 : Change\n");
-            printf_s("  2 : View\n");
-            printf_s("  3 : Delete\n");
+            printf_s("1 -Change | 2 -View | 3 -Delete | ");
         }
         else
         {
-            printf_s("  1 : Create\n");
+            printf_s("1 -Create | ");
         }
-        printf_s("  0 : Main Menu\n\n");
+        printf_s("0 -Main Menu\n");
 
         bool32 Answered = false;
 
         do
         {
-            printf_s("> ");
+            printf_s(": ");
             if(fgets(OptionBuffer, sizeof(OptionBuffer), stdin))
             {
                 StripSpaces(OptionBuffer, sizeof(OptionBuffer));
@@ -1110,17 +1140,13 @@ void MainMenu(project_details *Details, default_inputs *Defaults, bool32 *IsDefa
     do
     {
         printf_s("========= Main Menu =========\n\n");
-        printf_s(">>> Options:\n");
-        printf_s("  1 : Create Project\n");
-        printf_s("  2 : Defaults\n");
-        printf_s("  3 : Help\n");
-        printf_s("  0 : Quit\n\n");
+        printf_s(">Options: 1 -Create Project | 2 -Defaults | 3 -Help | 0 -Quit\n");
         
         bool32 Answered = false;
 
         do
         {
-            printf_s("> ");
+            printf_s(": ");
             if(fgets(OptionBuffer, sizeof(OptionBuffer), stdin))
             {
                 StripSpaces(OptionBuffer, sizeof(OptionBuffer));
