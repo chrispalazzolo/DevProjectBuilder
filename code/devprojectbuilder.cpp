@@ -338,6 +338,7 @@ bool32 CreateStartupFile(project_details *Details)
         fprintf(File, "%s %s%s %s%s", "subst", &Details->SubStDriveLetter, ":", Details->Paths.RootPath, "\n");
         fprintf(File, "%s %s%s", "call", Details->CompilerPath, "\n");
         fprintf(File, "%s%s%s", "set path=", Details->Paths.SubStRootPath, ";%path%\n");
+        fprintf(File, "%s %s%s", "cd /D", Details->Paths.SubStRootPath, "\n");
         fprintf(File, "%s", Details->IDECommand);
         fclose(File);
     }
@@ -356,18 +357,18 @@ bool32 CreateBuildFile(project_details *Details)
     if(!Error)
     {
         fprintf(File, "%s", "@echo off\n\n");
-        fprintf(File, "%s%s%s", "set RootPath=", Details->Paths.ProjectPath, "\n");
         fprintf(File, "%s%s%s", "set CommonCompilerFlags=", Details->CompilerFlags, "\n");
-        fprintf(File, "%s%s%s", "set CommonLinkerFlags=", Details->LinkerFlags, "\n\n");
-        fprintf(File, "%s", "IF NOT EXIST %RootPath%\\build mkdir %RootPath%\\build\n");
-        fprintf(File, "%s", "pushd %RootPath%\\build\n");
+        fprintf(File, "%s%s%s", "set CommonLinkerFlags=", Details->LinkerFlags, "\n");
+        fprintf(File, "%s", "set LinkerFiles=\n\n");
+        fprintf(File, "%s", "IF NOT EXIST build mkdir build\n");
+        fprintf(File, "%s", "pushd build\n\n");
         fprintf(File, "%s", "REM 32bit build\n");
-        fprintf(File, "%s%s%s", "REM cl %CommonCompilerFlags% %RootPath%\\code\\", Details->ProjectFileNameLower, ".cpp /link -subsystem:windows,5.10 %CommonLinkerFlags%\n\n");
+        fprintf(File, "%s%s%s", "REM cl %CommonCompilerFlags% ..\\code\\", Details->ProjectFileNameLower, ".cpp /link -subsystem:windows,5.10 %CommonLinkerFlags%\n\n");
         fprintf(File, "%s", "REM 64bit build\n");
         fprintf(File, "%s", "del *.pdb > NUL 2> NUL\n");
         fprintf(File, "%s", "REM If you want to compile a DLL\n");
-        fprintf(File, "%s", "REM cl %CommonCompilerFlags% %RootPath%\\code\\DLLNAMEHERE.cpp -FmNAMEHERE.map -LD /link -incremental:no -PDB:NAMEHERE.pdb -EXPORT:FUNCTIONEXPORTHERE\n");
-        fprintf(File, "%s%s%s%s%s", "cl %CommonCompilerFlags% %RootPath%\\code\\", Details->ProjectFileNameLower, ".cpp /Z7 -Fm", Details->ProjectFileNameLower, ".map /link %CommonLinkerFlags%\n");
+        fprintf(File, "%s", "REM cl %CommonCompilerFlags% ..\\code\\DLLNAMEHERE.cpp -FmNAMEHERE.map -LD /link -incremental:no -PDB:NAMEHERE.pdb -EXPORT:FUNCTIONEXPORTHERE\n");
+        fprintf(File, "%s%s%s%s%s", "cl %CommonCompilerFlags% ..\\code\\", Details->ProjectFileNameLower, ".cpp /Z7 -Fm", Details->ProjectFileNameLower, ".map /link %CommonLinkerFlags% %LinkerFiles%\n");
         fprintf(File, "%s", "popd");
         fclose(File);
     }
