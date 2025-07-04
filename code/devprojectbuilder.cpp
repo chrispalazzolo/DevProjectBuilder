@@ -12,189 +12,237 @@
 
 #include "devprojectbuilder.h"
 
+HWND hProjectNameEdit, hProjRootPathEdit, hProjRootPathBtn, hSubstComboBox, hCompilerEdit, hCompilerPathBtn, hCompilerArgsEdit, hCompilerFlagsEdit, hCompilerLinksEdit, hLinkFilesEdit, hDebuggerEdit, hDebuggerPathBtn, hDebuggerArgsEdit, hEditorEdit, hEditorPathBtn, hEditorArgsEdit, hShortCutCkBox, hCreateBtn, hResetBtn;
+
 //==== String Functions ================================================================================
-bool32 IsLetter(char Letter)
+int StrLen(char *str)
 {
-   return ((Letter > 64 && Letter < 91) || (Letter > 96 && Letter < 123));
+    int ct = 0;
+    
+    while(str[ct] != '\0')
+    {
+        ct++;
+    }
+    
+    return ct;
 }
 
-bool32 IsSpecialCharacter(char Character)
+bool32 IsLetter(char letter)
 {
-    return (!IsLetter(Character) && (Character < 48 || Character > 57));
+    return ((letter > 64 && letter < 91) || (letter > 96 && letter < 123));
 }
 
-void ToUpperCase(char *Str)
+bool32 IsSpecialCharacter(char character)
 {
-    if(Str != NULL)
+    return (!IsLetter(character) && (character < 48 || character > 57));
+}
+
+void ToUpperCase(char *str)
+{
+    if(str != NULL)
     {
         int i = 0;
-        while(Str[i] != 0)
+        
+        while(str[i] != 0)
         {
-            if(Str[i] >= 97 && Str[i] <= 122)
+            if(str[i] >= 97 && str[i] <= 122)
             {
-                Str[i] = Str[i] - 32;
+                str[i] = str[i] - 32;
             }
+            
 			++i;
         }
     }
 }
 
-void ToLowerCase(char *Str)
+void ToLowerCase(char *str)
 {
-    if(Str != NULL)
+    if(str != NULL)
     {
         int i = 0;
-        while(Str[i] != 0)
+        
+        while(str[i] != 0)
         {
-            if(Str[i] >= 65 && Str[i] <= 90)
+            if(str[i] >= 65 && str[i] <= 90)
             {
-                Str[i] = Str[i] + 32;
+                str[i] = str[i] + 32;
             }
-
+            
 			++i;
         }
     }
 }
 
-bool32 IsDriveSpecified(char *Path)
+bool32 IsDriveSpecified(char *path)
 {
-    bool32 Result = false;
-
-    if(Path != NULL)
+    bool32 result = false;
+    
+    if(path != NULL)
     {
-        Result = (IsLetter(Path[0]) && Path[1] == 58);
+        result = (IsLetter(path[0]) && path[1] == 58);
     }
-
-    return Result;
+    
+    return result;
 }
 
-void StripSpaces(char *Str, int SizeOfStr)
+bool32 ContainsSpace(char *str)
 {
-    if(Str != NULL)
+    if(str != NULL)
     {
-        size_t Len = strcspn(Str, "\0");
-        char NewStr[256];
-        int NewStrIndex = 0;
+        int i = 0;
+        
+        while(str[i] != '\0')
+        {
+            if(str[i] == ' ')
+            {
+                return 1;
+            }
+            
+            i++;
+        }
+    }
+    
+    return 0;
+}
+
+void StripSpaces(char *str, int sizeOfStr)
+{
+    if(str != NULL)
+    {
+        size_t Len = strcspn(str, "\0");
+        char newStr[256];
+        int newStrIndex = 0;
         for(int i = 0; i < Len; ++i)
         {
-            if(Str[i] != 32)
+            if(str[i] != 32)
             {
-                NewStr[NewStrIndex] = Str[i];
-                NewStrIndex++;
+                newStr[newStrIndex] = str[i];
+                newStrIndex++;
             }
         }
-
-        if(NewStrIndex < Len)
+        
+        if(newStrIndex < Len)
         {
-            NewStr[NewStrIndex] = 0;
-            _snprintf_s(Str, Len, Len, "%s", NewStr);
+            newStr[newStrIndex] = 0;
+            _snprintf_s(str, Len, Len, "%s", newStr);
         }
     }
 }
 
-void InsertSubString(char *Str, int SizeOfStr, int StartReplaceIndex, char *SubStr, int SizeOfSubStr)
+void InsertSubString(char *str, int sizeOfStr, int startReplaceIndex, char *subStr, int sizeOfSubStr)
 {
-    if(Str != NULL && SubStr != NULL)
+    if(str != NULL && subStr != NULL)
     {
-        size_t StrLen = strcspn(Str, "\0");
-        size_t SubStrLen = strcspn(SubStr, "\0");
-
-		if ((StrLen + SubStrLen) < SizeOfStr)
+        size_t strLen = strcspn(str, "\0");
+        size_t subStrLen = strcspn(subStr, "\0");
+        
+		if ((strLen + subStrLen) < sizeOfStr)
 		{
-            char NewStr[256];
-            _snprintf_s(NewStr, sizeof(NewStr), StartReplaceIndex, "%s", Str);
-			_snprintf_s(NewStr, sizeof(NewStr), "%s%s", NewStr, SubStr);
+            char newStr[256];
+            _snprintf_s(newStr, sizeof(newStr), startReplaceIndex, "%s", str);
+			_snprintf_s(newStr, sizeof(newStr), "%s%s", newStr, subStr);
             
-            StartReplaceIndex += 2;
-            int NewStrIndex = (int)(StartReplaceIndex + SubStrLen);
-            bool32 EndOfStr = false;
-            while(!EndOfStr)
+            startReplaceIndex += 2;
+            int newStrIndex = (int)(startReplaceIndex + subStrLen);
+            
+            bool32 endOfStr = 0;
+            
+            while(!endOfStr)
             {
-                EndOfStr = (Str[StartReplaceIndex] == 0);
-                NewStr[NewStrIndex] = Str[StartReplaceIndex];
-                ++NewStrIndex;
-                ++StartReplaceIndex;
+                endOfStr = (str[startReplaceIndex] == 0);
+                newStr[newStrIndex] = str[startReplaceIndex];
+                ++newStrIndex;
+                ++startReplaceIndex;
             }
-
-            _snprintf_s(Str, SizeOfStr, SizeOfStr, "%s", NewStr);
+            
+            _snprintf_s(str, sizeOfStr, sizeOfStr, "%s", newStr);
 		}
     }
 }
 
-void AppendString(char *Str, int SizeOfStr, char *AppendStr, int StartIndexOfAppendStr)
+void AppendString(char *str, int sizeOfStr, char *appendStr, int startIndexOfAppendStr)
 {
-    if(Str != NULL)
+    if(str != NULL)
     {
-        char NewStr[256];
-        _snprintf_s(NewStr, sizeof(NewStr), "%s", Str);
-        size_t EndOfStr = strcspn(NewStr, "\n");
+        char newStr[256];
+        _snprintf_s(newStr, sizeof(newStr), "%s", str);
+        size_t endOfStr = strcspn(newStr, "\n");
         
-        if(EndOfStr <= 0)
+        if(endOfStr <= 0)
         {
-            EndOfStr = strcspn(NewStr, "\0");
+            endOfStr = strcspn(newStr, "\0");
         }
-
-        int i = StartIndexOfAppendStr;
-        bool32 Done = false;
-
-        while(!Done)
+        
+        int i = startIndexOfAppendStr;
+        bool32 done = 0;
+        
+        while(!done)
         {
-            NewStr[EndOfStr] = AppendStr[i];
-
-            if(AppendStr[i] == '\0')
+            newStr[endOfStr] = appendStr[i];
+            
+            if(appendStr[i] == '\0')
             {
-
-                Done = true;
+                
+                done = 1;
             }
-
+            
             ++i;
-            ++EndOfStr;
+            ++endOfStr;
         }
-
-        _snprintf_s(Str, SizeOfStr, SizeOfStr, "%s", NewStr);
+        
+        _snprintf_s(str, sizeOfStr, sizeOfStr, "%s", newStr);
     }
 }
 
-void StrSpecifierSub(char *Str, int SizeOfStr, project_details *Details)
+void StrSpecifierSub(char *str, int sizeOfStr, project_details *details)
 {
-    if(Str != NULL)
+    if(str != NULL)
     {
-        bool32 EndOfStr = false;
+        bool32 endOfStr = 0;
         int i = 0;
-
-        while(!EndOfStr)
+        
+        while(!endOfStr)
         {
-            if(Str[i] == 123 && (((i+2) < SizeOfStr) && Str[i+2] == 125)) // if {*}
+            if(str[i] == 123 && (((i+2) < sizeOfStr) && str[i+2] == 125)) // if {*}
             {
-                char Identifier = Str[i+1];
-                switch(Identifier)
+                char identifier = str[i+1];
+                
+                switch(identifier)
                 {
                     case 'r': //root path
                     {
-                        InsertSubString(Str, SizeOfStr, i, Details->Paths.RootPath, sizeof(Details->Paths.RootPath));
-                    }break;
+                        InsertSubString(str, sizeOfStr, i, details->Paths.Root, sizeof(details->Paths.Root));
+                        
+                        break;
+                    }
                     case 'p': // project path
                     {
-                        InsertSubString(Str, SizeOfStr, i, Details->Paths.ProjectPath, sizeof(Details->Paths.ProjectPath));
-                    }break;
+                        InsertSubString(str, sizeOfStr, i, details->Paths.Project, sizeof(details->Paths.Project));
+                        
+                        break;
+                    }
                     case 'f': // path to cpp file
                     {
-                        char NewStr[256];
-                        _snprintf_s(NewStr, sizeof(NewStr), "%s%s.cpp", Details->Paths.CodePath, Details->ProjectFileNameLower);
-                        InsertSubString(Str, SizeOfStr, i, NewStr, sizeof(NewStr));
-                    }break;
+                        char newStr[256];
+                        _snprintf_s(newStr, sizeof(newStr), "%s%s.cpp", details->Paths.Code, details->ProjectFileNameLower);
+                        InsertSubString(str, sizeOfStr, i, newStr, sizeof(newStr));
+                        
+                        break;
+                    }
                     case 'h': // path to header file
                     {
-                        char NewStr[256];
-                        _snprintf_s(NewStr, sizeof(NewStr), "%s%s.h", Details->Paths.CodePath, Details->ProjectFileNameLower);
-                        InsertSubString(Str, SizeOfStr, i, NewStr, sizeof(NewStr));
-                    }break;
+                        char newStr[256];
+                        _snprintf_s(newStr, sizeof(newStr), "%s%s.h", details->Paths.Code, details->ProjectFileNameLower);
+                        InsertSubString(str, sizeOfStr, i, newStr, sizeof(newStr));
+                        
+                        break;
+                    }
                 }
             }
-
+            
             ++i;
-
-            EndOfStr = (Str[i] == '\0' || i >= SizeOfStr);
+            
+            endOfStr = (str[i] == '\0' || i >= sizeOfStr);
         }
     }
 }
@@ -205,7 +253,7 @@ void GetShortCutInfo(cmd_shortcut_info *Info, project_details *Details)
 {
     Info->ObjPath = "C:\\Windows\\System32\\cmd.exe";
     _snprintf_s(Info->Description, sizeof(Info->Description), "CMD and Editor Launcher for project %s", Details->ProjectName);
-    _snprintf_s(Info->Arguments, sizeof(Info->Arguments), "/k %sstartup.bat", Details->Paths.MiscPath);
+    _snprintf_s(Info->Arguments, sizeof(Info->Arguments), "/k %sstartup.bat", Details->Paths.Misc);
     GetDesktopPath(Info->DesktopPath);
     _snprintf_s(Info->SaveFile, sizeof(Info->SaveFile), "%s\\%s.lnk", Info->DesktopPath, Details->ProjectFolderName);
 }
@@ -214,9 +262,9 @@ HRESULT CreateLauncherCMDShortcut(project_details *Details)
 { 
     HRESULT Result; 
     void *PVReserved = NULL;
-
+    
     Result = CoInitialize(PVReserved);
-
+    
     if(SUCCEEDED(Result))
     {
         IShellLink* ShellLink;
@@ -231,34 +279,34 @@ HRESULT CreateLauncherCMDShortcut(project_details *Details)
             ShellLink->SetPath(Info.ObjPath);
             ShellLink->SetArguments(Info.Arguments);
             ShellLink->SetDescription(Info.Description);
-    
+            
             IPersistFile* PersistFile;
-
+            
             Result = ShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&PersistFile);
-    
+            
             if (SUCCEEDED(Result))
             {
                 WCHAR UnicodeStr[MAX_PATH];
-    
+                
                 // Ensure that the string is Unicode.
                 MultiByteToWideChar(CP_ACP, 0, Info.SaveFile, -1, UnicodeStr, MAX_PATH);
-    
+                
                 Result = PersistFile->Save(UnicodeStr, TRUE);
 				
                 PersistFile->Release();
             }
-
+            
             ShellLink->Release();
         }
     }
-
+    
     return Result;
 }
 
 bool32 CreateHeaderFile(project_details *Details)
 {
     char HeaderFileNameBuffer[256];
-    _snprintf_s(HeaderFileNameBuffer, sizeof(HeaderFileNameBuffer), "%s%s.h", Details->Paths.CodePath, Details->ProjectFileNameLower);
+    _snprintf_s(HeaderFileNameBuffer, sizeof(HeaderFileNameBuffer), "%s%s.h", Details->Paths.Code, Details->ProjectFileNameLower);
     FILE *HeaderFile;
     
     errno_t Error = fopen_s(&HeaderFile, HeaderFileNameBuffer, "w");
@@ -278,14 +326,14 @@ bool32 CreateHeaderFile(project_details *Details)
         fprintf(HeaderFile, "%s", "#endif");
         fclose(HeaderFile);
     }
-
+    
     return !Error;
 }
 
 bool32 CreateCPPFile(project_details *Details)
 {
     char CPPFileNameBuffer[256];
-    _snprintf_s(CPPFileNameBuffer, sizeof(CPPFileNameBuffer), "%s%s.cpp", Details->Paths.CodePath, Details->ProjectFileNameLower);
+    _snprintf_s(CPPFileNameBuffer, sizeof(CPPFileNameBuffer), "%s%s.cpp", Details->Paths.Code, Details->ProjectFileNameLower);
     FILE *CPPFile;
     
     errno_t Error = fopen_s(&CPPFile, CPPFileNameBuffer, "w");
@@ -297,95 +345,159 @@ bool32 CreateCPPFile(project_details *Details)
         fprintf(CPPFile, "%s", "// Add code here...\n\n");
         fclose(CPPFile);
     }
-
+    
     return !Error;
 }
 
-void CreateProjectFiles(project_details *Details)
+bool32 CreateProjectFiles(project_details *Details)
 {
-    printf_s(" Creating Header File (%s.h)... ", Details->ProjectFileNameLower);
-    if(CreateHeaderFile(Details))
+    if(!CreateHeaderFile(Details))
     {
-        printf_s("Success!\n");
-    }
-    else
-    {
-        printf_s("Failed!\n");
+        return 0;
     }
     
-    printf_s(" Creating .cpp File (%s.cpp)... ", Details->ProjectFileNameLower);
-    if(CreateCPPFile(Details))
+    if(!CreateCPPFile(Details))
     {
-        printf_s("Success!\n");
+        return 0;
+    }
+    
+    return 1;
+}
+
+bool32 CreateStartBatFile(project_details *Details)
+{
+    char FileNameAndPath[MAX_PATH];
+    _snprintf_s(FileNameAndPath, sizeof(FileNameAndPath), "%sstartup.bat", Details->Paths.Misc);
+    
+    FILE *File;
+    errno_t Error = fopen_s(&File, FileNameAndPath, "w");
+    
+    if(Error)
+    {
+        return 0;
+    }
+    
+    fprintf(File, "%s", "@echo off\n");
+    fprintf(File, "%s %s%s %s%s", "subst", &Details->SubStDriveLetter, ":", Details->Paths.Root, "\n");
+    
+    if(Details->CompilerArgs[0] != '\0')
+    {
+        fprintf(File, "%s %s %s%s", "call", Details->Paths.Compiler, Details->CompilerArgs, "\n");
     }
     else
     {
-        printf_s("Failed!\n");
+        fprintf(File, "%s %s%s", "call", Details->Paths.Compiler, "\n");
     }
-}
-
-bool32 CreateStartupFile(project_details *Details)
-{
-    char FileNameAndPath[MAX_PATH];
-    _snprintf_s(FileNameAndPath, sizeof(FileNameAndPath), "%sstartup.bat", Details->Paths.MiscPath);
-
-    FILE *File;
-    errno_t Error = fopen_s(&File, FileNameAndPath, "w");
-
-    if(!Error)
+    
+    fprintf(File, "%s%s%s", "set PATH=%PATH%;", Details->Paths.SubStRoot, "\n" );
+    
+    if(Details->Paths.Debugger[0] != '\0')
     {
-        fprintf(File, "%s", "@echo off\n");
-        fprintf(File, "%s %s%s %s%s", "subst", &Details->SubStDriveLetter, ":", Details->Paths.RootPath, "\n");
-        fprintf(File, "%s %s%s", "call", Details->CompilerPath, "\n");
-        fprintf(File, "%s%s%s", "set path=", Details->Paths.SubStRootPath, ";%path%\n");
-        fprintf(File, "%s %s%s", "cd /D", Details->Paths.SubStRootPath, "\n");
-        fprintf(File, "%s", Details->IDECommand);
-        fclose(File);
+        fprintf(File, "%s%s%s", "set PATH=%PATH%;", Details->Paths.Debugger, ";%PATH%\n");
     }
-
-    return !Error;
+    
+    
+    fprintf(File, "%s %s%s", "cd /D", Details->Paths.SubStRoot, "\n");
+    fprintf(File, "%s", "start /b cmd.exe\n");
+    
+    if(Details->Paths.Debugger[0] != '\0')
+    {
+        if(Details->DebuggerArgs[0] != '\0')
+        {
+            fprintf(File, "%s %s %s %s", "start /b", Details->DebuggerFile, Details->DebuggerArgs, "\n");
+        }
+        else
+        {
+            fprintf(File, "%s %s %s", "start /b", Details->DebuggerFile, "\n");
+        }
+    }
+    
+    if(Details->Paths.Editor[0] != '\0')
+    {
+        if(Details->EditorArgs[0] != '\0')
+        {
+            fprintf(File, "%s %s", Details->Paths.Editor, Details->EditorArgs);
+        }
+        else
+        {
+            fprintf(File, "%s", Details->Paths.Editor);
+        }
+    }
+    
+    fclose(File);
+    
+    return 1;
 }
 
-bool32 CreateBuildFile(project_details *Details)
+bool32 CreateBuildBatFile(project_details *Details)
 {
     char FileNameAndPath[MAX_PATH];
-    _snprintf_s(FileNameAndPath, sizeof(FileNameAndPath), "%sbuild.bat", Details->Paths.CodePath);
-
+    _snprintf_s(FileNameAndPath, sizeof(FileNameAndPath), "%sbuild.bat", Details->Paths.Code);
+    
     FILE *File;
     errno_t Error = fopen_s(&File, FileNameAndPath, "w");
 	
     if(!Error)
     {
         fprintf(File, "%s", "@echo off\n\n");
-        fprintf(File, "%s%s%s", "set CommonCompilerFlags=", Details->CompilerFlags, "\n");
-        fprintf(File, "%s%s%s", "set CommonLinkerFlags=", Details->LinkerFlags, "\n");
-        fprintf(File, "%s", "set LinkerFiles=\n\n");
-        fprintf(File, "%s", "IF NOT EXIST build mkdir build\n");
-        fprintf(File, "%s", "pushd build\n\n");
+        
+        if(Details->CompilerFlags[0] != '\0')
+        {
+            fprintf(File, "%s%s%s", "set CommonCompilerFlags=", Details->CompilerFlags, "\n");
+        }
+        
+        if(Details->CompilerLinkerFlags[0] != '\0')
+        {
+            fprintf(File, "%s%s%s", "set CommonLinkerFlags=", Details->CompilerLinkerFlags, "\n");
+        }
+        
+        if(Details->LinkFiles[0] != '\0')
+        {
+            fprintf(File, "%s%s%s", "set LinkerFiles=", Details->LinkFiles , "\n\n");
+        }
+        
+        fprintf(File, "%s", "IF NOT EXIST ..\\build mkdir ..\\build\n");
+        fprintf(File, "%s", "pushd ..\\build\n\n");
         fprintf(File, "%s", "REM 32bit build\n");
-        fprintf(File, "%s%s%s", "REM cl %CommonCompilerFlags% ..\\code\\", Details->ProjectFileNameLower, ".cpp /link -subsystem:windows,5.10 %CommonLinkerFlags%\n\n");
+        fprintf(File, "%s%s%s%s%s", "REM cl %CommonCompilerFlags% \\", Details->ProjectFileNameLower, "\\code\\", Details->ProjectFileNameLower, ".cpp /link -subsystem:windows,5.10 %CommonLinkerFlags%\n\n");
+        
         fprintf(File, "%s", "REM 64bit build\n");
         fprintf(File, "%s", "del *.pdb > NUL 2> NUL\n");
         fprintf(File, "%s", "REM If you want to compile a DLL\n");
-        fprintf(File, "%s", "REM cl %CommonCompilerFlags% ..\\code\\DLLNAMEHERE.cpp -FmNAMEHERE.map -LD /link -incremental:no -PDB:NAMEHERE.pdb -EXPORT:FUNCTIONEXPORTHERE\n");
-        fprintf(File, "%s%s%s%s%s", "cl %CommonCompilerFlags% ..\\code\\", Details->ProjectFileNameLower, ".cpp /Z7 -Fm", Details->ProjectFileNameLower, ".map /link %CommonLinkerFlags% %LinkerFiles%\n");
+        fprintf(File, "%s%s%s", "REM cl %CommonCompilerFlags% \\", Details->ProjectFileNameLower, "\\code\\DLLNAMEHERE.cpp -FmNAMEHERE.map -LD /link -incremental:no -PDB:NAMEHERE.pdb -EXPORT:FUNCTIONEXPORTHERE\n");
+        fprintf(File, "%s%s%s%s%s%s%s", "cl %CommonCompilerFlags% \\", Details->ProjectFileNameLower, "\\code\\", Details->ProjectFileNameLower, ".cpp /Z7 -Fm", Details->ProjectFileNameLower, ".map /link %CommonLinkerFlags% %LinkerFiles%\n");
         fprintf(File, "%s", "popd");
         fclose(File);
     }
-
+    
     return !Error;
+}
+
+bool32 CreateBatFiles(project_details *Details)
+{
+    if(!CreateStartBatFile(Details))
+    {
+        return 0;
+    }
+    
+    if(!CreateBuildBatFile(Details))
+    {
+        return 0;
+    }
+    
+    return 1;
 }
 
 // NOTE: Passing file name just in case I want to set up multiple defaults
 bool32 SaveDefaults(default_inputs *Defaults, char *FileName)
 {
     bool32 Result = false;
-
+    
     if(Defaults != NULL && FileName != NULL)
     {
         FILE *File;
         errno_t Error = fopen_s(&File, FileName, "wb");
-
+        
         if(!Error)
         {
             fwrite(Defaults, sizeof(default_inputs), 1, File);
@@ -393,14 +505,14 @@ bool32 SaveDefaults(default_inputs *Defaults, char *FileName)
             Result = true;
         }
     }
-
+    
     return Result;
 }
 
 bool32 GetDefaultsFromFile(default_inputs *Defaults, char *FileName)
 {
     bool32 Result = false;
-
+    
     FILE *File;
     errno_t Error = fopen_s(&File, FileName, "rb");
     if(!Error)
@@ -409,7 +521,7 @@ bool32 GetDefaultsFromFile(default_inputs *Defaults, char *FileName)
         fclose(File);
         Result = true;
     }
-
+    
     return Result;
 }
 // === End Files Functions =====================================================================
@@ -426,148 +538,70 @@ void GetDesktopPath(char *Path)
 
 int CreateDir(char *Path)
 {
-    int Result = 0; //0 - error, 1 - success, EEXIST = 17 - exists
+    int result = 0; //0 - error, 1 - success, EEXIST = 17 - exists
     
     int MkDirResult = _mkdir(Path);
-
+    
     if(MkDirResult == 0 || errno == EEXIST)
     {
         if(MkDirResult == -1 && errno == EEXIST)
         {
-            Result = EEXIST;
+            result = EEXIST;
         }
         else
         {
-            Result = 1;
+            result = 1;
         }
     }
-
-    return Result;
+    
+    return result;
 }
 
 bool32 RemoveDir(char *Path)
 {
-    bool32 Result = false;
-
-    if(_rmdir(Path))
-    {
-        printf_s(" Path %s has been deleted...\n", Path);
-        Result = true;
-    }
-    else
-    {
-        printf_s(" Error deleting path %s...\n", Path);
-    }
-
-    return Result;
+    return _rmdir(Path);
 }
 
 bool32 CreateProjectDirectories(project_paths *Paths)
 {
-    //NOTE: I have a feeling this function can be done better
-    bool32 Result = false;
-
-    bool32 RootCreated = false;
-    bool32 ProjectCreated = false;
-    bool32 CodeCreated = false;
-
-    int CreateResult;
-
-    printf_s(" Creating directory: %s... ", Paths->RootPath);
-    CreateResult = CreateDir(Paths->RootPath);
-    if(CreateResult)
+    if(!CreateDir(Paths->Root))
     {
-        if(CreateResult != EEXIST)
-        {
-            printf_s("Success!\n");
-            RootCreated = true;
-        }
-        else
-        {
-            printf_s("Already Exists!\n");
-        }
-        
-        printf_s(" Creating directory: %s... ", Paths->ProjectPath);
-        CreateResult = CreateDir(Paths->ProjectPath);
-        if(CreateResult)
-        {
-            if(CreateResult != EEXIST)
-            {
-                printf_s("Success!\n");
-                ProjectCreated = true;
-            }
-            else
-            {
-                printf_s("Already Exists!\n");
-            }
-
-            printf_s(" Creating directory: %s... ", Paths->CodePath);
-            CreateResult = CreateDir(Paths->CodePath);
-            if(CreateResult)
-            {
-                if(CreateResult != EEXIST)
-                {
-                    printf_s("Success!\n");
-                    CodeCreated = true;
-                }
-                else
-                {
-                    printf_s("Already Exists!\n");
-                }
-
-                printf_s(" Creating directory: %s... ", Paths->MiscPath);
-                CreateResult = CreateDir(Paths->MiscPath);
-                printf_s((CreateResult != EEXIST)?"Success!\n" : "Already Exists!\n");
-                Result = true;
-            }
-            else
-            {
-                printf_s("Failed!\n");
-            }
-        }
-        else
-        {
-            printf_s("Failed!\n");
-        }
+        return 0;
     }
-    else
-    {
-        printf_s("Failed!\n");
-    }
-
-
-    if(!Result)
-    {
-        printf_s(" !!!Error creating directories, removing any directories created...\n");
-        
-        if(RootCreated)
-        {
-            RemoveDir(Paths->RootPath);
-        }
     
-        if(ProjectCreated)
-        {
-            RemoveDir(Paths->ProjectPath);
-        }
-    
-        if(CodeCreated)
-        {
-            RemoveDir(Paths->CodePath);
-        }
+    if(!CreateDir(Paths->Project))
+    {
+        RemoveDir(Paths->Root);
+        return 0;
     }
-
-    return Result;
+    
+    if(!CreateDir(Paths->Code))
+    {
+        RemoveDir(Paths->Root);
+        RemoveDir(Paths->Project);
+        return 0;
+    }
+    
+    if(!CreateDir(Paths->Misc))
+    {
+        RemoveDir(Paths->Root);
+        RemoveDir(Paths->Project);
+        RemoveDir(Paths->Code);
+        return 0;
+    }
+    
+    return 1;
 }
 
 void SetProjectFileNames(project_details *Details)
 {
     char Name[sizeof(Details->ProjectName)];
     _snprintf_s(Name, sizeof(Name), "%s", Details->ProjectName);
-
+    
     StripSpaces(Name, sizeof(Name));
     
     _snprintf_s(Details->ProjectFolderName, sizeof(Details->ProjectFolderName), 256, "%s", Name);
-
+    
     _snprintf_s(Details->ProjectFileNameUpper, sizeof(Details->ProjectFileNameUpper), 256, "%s", Name);
     ToUpperCase(Details->ProjectFileNameUpper);
     
@@ -577,625 +611,744 @@ void SetProjectFileNames(project_details *Details)
 
 void SetPaths(project_details *Details)
 {
-    _snprintf_s(Details->Paths.ProjectPath, sizeof(Details->Paths.ProjectPath), "%s%s\\", Details->Paths.RootPath, Details->ProjectFolderName);
-    _snprintf_s(Details->Paths.CodePath, sizeof(Details->Paths.CodePath), "%scode\\", Details->Paths.ProjectPath);
-    _snprintf_s(Details->Paths.MiscPath, sizeof(Details->Paths.MiscPath), "%smisc\\", Details->Paths.ProjectPath);
-    _snprintf_s(Details->Paths.SubStRootPath, sizeof(Details->Paths.SubStRootPath), "%s:\\%s", Details->SubStDriveLetter, Details->ProjectFolderName);
+    _snprintf_s(Details->Paths.Project, sizeof(Details->Paths.Project), "%s\\%s\\", Details->Paths.Root, Details->ProjectFolderName);
+    _snprintf_s(Details->Paths.Code, sizeof(Details->Paths.Code), "%scode\\", Details->Paths.Project);
+    _snprintf_s(Details->Paths.Misc, sizeof(Details->Paths.Misc), "%smisc\\", Details->Paths.Project);
+    _snprintf_s(Details->Paths.SubStRoot, sizeof(Details->Paths.SubStRoot), "%s:\\%s", Details->SubStDriveLetter, Details->ProjectFolderName);
 }
 
-void PrintPaths(project_paths *Paths)
+void GetFileName(char *fileName, int sizeOfFileName, char *filePath)
 {
-    printf_s("Project Paths...\n");
-    printf_s("%s\n%s\n%s\n%s\n\n", Paths->RootPath, Paths->ProjectPath, Paths->CodePath, Paths->MiscPath);
+    char newStr[256];
+    newStr[0] = '\0';
+    
+    if(filePath != NULL)
+    {
+        int pathLen = StrLen(filePath);
+        int i = pathLen;
+        
+        while(i > -1)
+        {
+            if(filePath[i] == '\\')
+            {
+                break;
+            }
+            
+            i--;
+        }
+        
+        i++; //move off the \\ on to first char of file name.
+        int newI = 0;
+        
+        while(i <= pathLen)
+        {
+            newStr[newI] = filePath[i];
+            
+            i++;
+            newI++;
+        }
+        
+    }
+    
+    _snprintf_s(fileName, sizeOfFileName, sizeOfFileName, "%s", newStr);
 }
 
-void PrintProjectDetails(project_details *Details)
-{
-    printf_s("\n----- Project Details -----\n");
-    printf_s("Project Name: %s\n", Details->ProjectName);
-    printf_s("Root Path: %s\n", Details->Paths.RootPath);
-	printf_s("Project Path: %s\n", Details->Paths.ProjectPath);
-    printf_s("Compiler: %s\n", Details->CompilerPath);
-    printf_s("Compiler Flags: %s\n", Details->CompilerFlags);
-    printf_s("Linker Flags: %s\n", Details->LinkerFlags);
-    printf_s("Editor command: %s\n", Details->IDECommand);
-    printf_s("Subst Drive Letter: %s\n", Details->SubStDriveLetter);
-    printf_s("Subst Mapping: %s will be mapped to %s\n\n", Details->Paths.ProjectPath, Details->Paths.SubStRootPath);
-    printf_s("The following directories will be created based on your inputs:\n");
-    PrintPaths(&Details->Paths);
-}
-
-void PrintDefaultDetails(default_inputs *Defaults)
-{
-    printf_s("\n----- Default Details -----\n");
-    printf_s("Root Path: %s\n\n", Defaults->RootPath);
-    printf_s("Compiler Path: %s\n\n", Defaults->Compiler);
-    printf_s("Compiler Flags: %s\n\n", Defaults->CompilerFlags);
-    printf_s("Linker Flags: %s\n\n", Defaults->LinkerFlags);
-    printf_s("Editor Command Line: %s\n", Defaults->EditorCMD);
-}
-
-void DisplayHelp(void)
-{
-    printf_s("\n---- Help ----\n\n");
-    printf_s("DevProjectBuilder - Is an application which creates a project (C++ currently) based on given inputs or user saved defaults. It will create a directory with the name of the provide project name at the location provided but the user. In the project directory two directories are create, code and misc.  It will also create a build.bat (stored in the code dir) and startup.bat (stored in the misc dir) with user provided inputs.  It will also generate a .cpp and .h files (both stored in the code dir) named after the project name and a CMD shortcut on your desktop which points and runs the startup.bat file.\n\n");
-    printf_s("Create Project: Choose the \"Create Project\" option from Main Menu.\n");
-    printf_s("  No defaults   - If you do not have any defaults save when creating a project just follow the prompts filling out the\n                  information, then confirm to create the project.\n");
-    printf_s("  With defaults - With each prompted if there is a default saved for that prompt, the default will appear at the end\n                  of the prompt.  You have the following choices...\n\n");
-    printf_s("    Use default          - Hit enter\n");
-    printf_s("    Override default     - Enter a value and hit enter. What you enter will be used over the default value.\n");
-    printf_s("    Appending to default - Certain prompts allow you append to a default. To append start your input with\n                           '{a}' then the value you want to append.\n");
-    printf_s("                           Example: Enter root path (Default: C:\\MyDirectory): {a}MySubDirectory sets the value\n                                    to C:\\MyDirectory\\MySubDirectory\n\n");
-    printf_s("Defaults: Choose the \"Defaults\" option from the Main Menu.\n");
-    printf_s("  No defaults saved: Only options available, Save or return to Main Menu.\n");
-    printf_s("    Save: Follow the prompts, for anything you don't want a default saved, just hit enter.\n");
-    printf_s("    Special string replacement identifiers:  While entering defaults you have the option to place\n                                             special identifiers to be replaced when a project is created using defaults.\n\n");
-    printf_s("    {r} : Inserts the root path provided\n");
-    printf_s("    {p} : Inserts the project path\n");
-    printf_s("    {f} : Inserts the path to the generated cpp file.\n");
-    printf_s("    {h} : Inserts the path to the generated header file.\n\n");
-    printf_s("    Example: Enter editor's command line command: code -n {p} - Saves as code -n {p}, if project path is\n             C:\\MyDevDir\\MyProject when a project is created: code -n C:\\MyDevDir\\MyProject.\n\n");
-    printf_s("  Default already saved: Options available are View, Change, Delete or return to Main Menu.\n");
-    printf_s("    View: Displays the currently saved default.\n");
-    printf_s("    Change: Same process as saving defaults.  You will run through the default prompts.\n");
-    printf_s("    Delete: Removes all of your defaults.\n\n");
-    printf_s("Help: Well you're reading them now...\n\n");
-    printf_s("Quit: Exits the program.\n\n");
-    printf_s("After you created a project...\n");
-    printf_s("There is a project directory (named after the project name) in the provided root directory.\n");
-    printf_s("Inside the project directory:\n");
-    printf_s("\"code\" directory which contains build.bat, <projectname>.cpp, <projectname>.h.\n");
-    printf_s("\"misc\" directory which contains startup.bat.\n");
-    printf_s("build.bat - A bat file with commands which calls the compiler provided by the user with given flags also provided by the user.\n");
-    printf_s("startup.bat - A bat file with commands to run the subst command, calls the compiler and runs the given editor command.\n");
-    printf_s("<projectname>.cpp - A cpp file template/stub.\n");
-    printf_s("<projectname>.h - A header file template/stub.\n\n");
-    printf_s("CMD shortcut saved to your desktop - This shortcut points to the startup.bat file and runs it.\n\n");
-}
 // === End Util Functions ================================================================================
 
-// === Question and Input Function =======================================================================
-void AskQuestion(char *Question, char *Detail, int SizeOfDetail)
-{
-    bool32 Answered = false;
-    char *Answer;
-
-    do
-    {
-        printf_s(Question);
-        Answer = fgets(Detail, SizeOfDetail, stdin);
-        if(Answer != NULL && Answer[0] != '\n')
-        {
-            Answered = true;
-        }
-    }
-    while(!Answered);
-}
-
-void AskQuestion(char *QuestionToAsk, int SizeOfQuestion, char *Detail, int SizeOfDetail, char *DefaultAnswer)
-{
-    bool32 HasDefault = (DefaultAnswer != NULL && DefaultAnswer[0] != '\0');
-    bool32 Answered = false;
-    char Question[256];
-    char *FormatStr = (HasDefault) ? "%s (Default: %s): " : "%s: ";
-
-    _snprintf_s(Question, sizeof(Question), FormatStr, QuestionToAsk, DefaultAnswer);
-
-    do
-    {
-        printf_s(Question);
-        Detail = fgets(Detail, SizeOfDetail, stdin);
-
-        if(Detail != NULL && Detail[0] != '\n')
-        {
-            Answered = true;
-        }
-        else if(HasDefault)
-        {
-            _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", DefaultAnswer);
-            Answered = true;
-        }
-
-    }
-    while(!Answered);
-}
-
-void GetProjectName(char *ProjectName, int SizeOfProjectName)
-{
-    bool32 Answered = false;
-    size_t NewlineIndex = 0;
-    
-    do
-    {
-        AskQuestion("Enter project name: ", ProjectName, SizeOfProjectName);
-        NewlineIndex = strcspn(ProjectName, "\n");
-        
-        if(NewlineIndex > 1)
-        {
-            if(!IsSpecialCharacter(ProjectName[0]))
-            {
-                Answered = true;
-            }
-        }
-
-    }while(!Answered);
-
-    ProjectName[NewlineIndex] = 0;
-} 
-
-void GetRootPath(char *Detail, int SizeOfDetail, char *Default, int SizeOfDefault)
-{
-    bool32 Answered = false;
-    size_t NewlineIndex = NULL;
-
-    char Question[256] = "Enter root path";
-
-    while(!Answered)
-    {
-        AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
-		NewlineIndex = strcspn(Detail, "\n");
-
-        if(NewlineIndex >= 2) // at least has a drive letter and ':'...  'C:' should be acceptable
-        {
-            if(IsDriveSpecified(Detail)) // does the path start with <a-z>|<A-Z>:
-            {
-                if(Detail[NewlineIndex - 1] != 92 && Detail[NewlineIndex - 1] != 47)
-                {
-                    Detail[NewlineIndex] = 92; // back slash
-					++NewlineIndex;
-					if (NewlineIndex < SizeOfDetail)
-					{
-						Detail[NewlineIndex] = 0;
-					}
-                }
-                else
-                {
-                    Detail[NewlineIndex] = 0;
-                }
-
-                Answered = true;
-            }
-            else if(Default != NULL && Default[0] != '\0' && strcspn(Detail, "{a}") == 0)
-            {
-				Detail[NewlineIndex] = 92;
-				++NewlineIndex;
-				if (NewlineIndex < SizeOfDetail)
-				{
-					Detail[NewlineIndex] = 0;
-                }
-                char NewStr[256];
-                _snprintf_s(NewStr, sizeof(NewStr), "%s", Default);
-                AppendString(NewStr, sizeof(NewStr), Detail, 3);
-                _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", NewStr);
-                Answered = true;
-            }
-        }
-    }
-}
-
-void GetSubStrDriveLetter(char *SubSt, char *Default)
-{
-    bool32 Answered = false;
-    size_t NewLineIndex = NULL;
-    
-    char Question[256] = "Enter subst drive letter";
-    char Answer[256];
-
-    while(!Answered)
-    {
-        AskQuestion(Question, sizeof(Question), Answer, sizeof(Answer), Default);
-        NewLineIndex = strcspn(Answer, "\n");
-
-        StripSpaces(Answer, sizeof(Answer));
-
-        if(NewLineIndex != 0 && (Answer[1] == '\n' || Answer[1] == ' ' || Answer[1] == ':' || Answer[1] == '\0'))
-        {
-            if(IsLetter(Answer[0]))
-            {
-                SubSt[0] = Answer[0];
-                SubSt[1] = 0;
-                Answered = true;
-            }
-        }
-    }
-}
-
-void GetCompilerPath(char *Detail, int SizeOfDetail, char *Default)
-{
-    bool32 Answered = false;
-    size_t NewlineIndex = NULL;
-
-    char Question[256] = "Enter path to compiler";
-
-    while(!Answered)
-    {
-        AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
-        NewlineIndex = strcspn(Detail, "\n");
-        
-        if(NewlineIndex >= 2)
-        {
-            if(IsDriveSpecified(Detail))
-            {
-                Answered = true;
-            } 
-        }
-    }
-
-    Detail[strcspn(Detail, "\n")] = 0;
-
-}
-
-void GetIDECMLCommand(char *Detail, int SizeofDetail, char *Default)
-{
-    char Question[256] = "Enter editor's command line command";
-    AskQuestion(Question, sizeof(Question), Detail, SizeofDetail, Default);
-    Detail[strcspn(Detail, "\n")] = 0;
-}
-
-void GetCompilerFlags(char *Detail, int SizeOfDetail, char *Default)
-{
-    char Question[256] = "Enter Compiler Flags";
-    AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
-    Detail[strcspn(Detail, "\n")] = 0;
-    if(Default != NULL && Default[0] != '\0' && strcspn(Detail, "{a}") == 0)
-    {
-        char NewStr[256];
-        _snprintf_s(NewStr, sizeof(NewStr), "%s", Default);
-        AppendString(NewStr, sizeof(NewStr), Detail, 3);
-        _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", NewStr);
-    }
-}
-
-void GetLinkerFlags(char *Detail, int SizeOfDetail, char *Default)
-{
-    char Question[256] = "Enter Linker Flags";
-    AskQuestion(Question, sizeof(Question), Detail, SizeOfDetail, Default);
-    Detail[strcspn(Detail, "\n")] = 0;
-    if(Default != NULL && Default[0] != '\0' && strcspn(Detail, "{a}") == 0)
-    {
-        char NewStr[256];
-        _snprintf_s(NewStr, sizeof(NewStr), "%s", Default);
-        AppendString(NewStr, sizeof(NewStr), Detail, 3);
-        _snprintf_s(Detail, SizeOfDetail, SizeOfDetail, "%s", NewStr);
-    }
-}
-
-void AskStartupQuestions(project_details *Details, default_inputs *Defaults)
-{
-    GetProjectName(Details->ProjectName, sizeof(Details->ProjectName));
-    
-    SetProjectFileNames(Details);
-    
-    GetRootPath(Details->Paths.RootPath, sizeof(Details->Paths.RootPath), Defaults->RootPath, sizeof(Defaults->RootPath));
-    GetSubStrDriveLetter(Details->SubStDriveLetter, Defaults->SubStDriveLetter);
-    
-    SetPaths(Details);
-
-    GetCompilerPath(Details->CompilerPath, sizeof(Details->CompilerPath), Defaults->Compiler);
-    GetIDECMLCommand(Details->IDECommand, sizeof(Details->IDECommand), Defaults->EditorCMD);
-    StrSpecifierSub(Details->IDECommand, sizeof(Details->IDECommand), Details);
-}
-
-void AskBuildQuestions(project_details *Details, default_inputs *Defaults)
-{
-    GetCompilerFlags(Details->CompilerFlags, sizeof(Details->CompilerFlags), Defaults->CompilerFlags);
-    GetLinkerFlags(Details->LinkerFlags, sizeof(Details->LinkerFlags), Defaults->LinkerFlags);
-}
-
-void AskDefaultQuestions(default_inputs *Defaults)
-{
-    GetRootPath(Defaults->RootPath, sizeof(Defaults->RootPath), NULL, 0);
-    GetSubStrDriveLetter(Defaults->SubStDriveLetter, NULL);
-    GetCompilerPath(Defaults->Compiler, sizeof(Defaults->Compiler), NULL);
-    GetIDECMLCommand(Defaults->EditorCMD, sizeof(Defaults->EditorCMD), NULL);
-    GetCompilerFlags(Defaults->CompilerFlags, sizeof(Defaults->CompilerFlags), NULL);
-    GetLinkerFlags(Defaults->LinkerFlags, sizeof(Defaults->LinkerFlags), NULL);
-}
-// === End Questions and Inputs Functions ==============================================================================
-
 // === Main Project Functions ==========================================================================================
-int GetProjectConfirmation(project_details *Details)
+bool CreateProject(HWND window)
 {
-    int Result = 0;
-    bool32 Answered = false;
-    char Input[256];
-
-    PrintProjectDetails(Details);
-
-    while(!Answered)
+    project_details details = {};
+    
+    details.ProjectName[0] = '\0';
+    GetWindowText(hProjectNameEdit, details.ProjectName, sizeof(details.ProjectName));
+    
+    if(details.ProjectName[0] == '\0')
     {
-        printf_s(">Build Project? 1 -Yes | 2 -No, Redo | 0 -No, Return to Main Menu : ");
-		if(fgets(Input, sizeof(Input), stdin))
-		{
-            size_t InputCount = strcspn(Input, "\n");
-
-            if(InputCount == 1)
-            {
-                char Answer = Input[0];
-                Result = Answer - 48;
-                if(Result >= 0 && Result <= 2)
-                {
-                    Answered = true;
-                }
-            }
-		}
+        MessageBox(NULL, "Please provide a name for the project!", "Create Project Error", NULL);
+        return 0;
     }
-
-    return Result;
+    
+    if(ContainsSpace(details.ProjectName))
+    {
+        MessageBox(NULL, "No spaces are allow in project name!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    SetProjectFileNames(&details);
+    
+    details.Paths.Root[0] = '\0';
+    GetWindowText(hProjRootPathEdit, details.Paths.Root, sizeof(details.Paths.Root));
+    
+    if(details.Paths.Root[0] == '\0')
+    {
+        MessageBox(NULL, "Please provide a root path of the project!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    GetWindowText(hSubstComboBox, details.SubStDriveLetter, sizeof(details.SubStDriveLetter));
+    
+    details.Paths.Compiler[0] = '\0';
+    GetWindowText(hCompilerEdit, details.Paths.Compiler, sizeof(details.Paths.Compiler));
+    
+    if(details.Paths.Compiler[0] == '\0')
+    {
+        MessageBox(NULL, "Please provide the application path to a compiler!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    details.CompilerArgs[0] = '\0';
+    GetWindowText(hCompilerArgsEdit, details.CompilerArgs, sizeof(details.CompilerArgs));
+    
+    details.CompilerFlags[0] = '\0';
+    GetWindowText(hCompilerFlagsEdit, details.CompilerFlags, sizeof(details.CompilerFlags));
+    
+    details.CompilerLinkerFlags[0] = '\0';
+    GetWindowText(hCompilerLinksEdit, details.CompilerLinkerFlags, sizeof(details.CompilerLinkerFlags));
+    
+    details.LinkFiles[0] = '\0';
+    GetWindowText(hLinkFilesEdit, details.LinkFiles, sizeof(details.LinkFiles));
+    
+    details.Paths.Debugger[0] = '\0';
+    
+    GetWindowText(hDebuggerEdit, details.Paths.Debugger, sizeof(details.Paths.Debugger));
+    
+    if(details.Paths.Debugger[0] != '\0')
+    {
+        details.DebuggerFile[0] = '\0';
+        GetFileName(details.DebuggerFile, sizeof(details.DebuggerFile), details.Paths.Debugger);
+        
+        details.DebuggerArgs[0] = '\0';
+        GetWindowText(hDebuggerArgsEdit, details.DebuggerArgs, sizeof(details.DebuggerArgs));
+    }
+    
+    details.Paths.Editor[0] = '\0';
+    details.EditorArgs[0] = '\0';
+    GetWindowText(hEditorEdit, details.Paths.Editor, sizeof(details.Paths.Editor));
+    
+    if(details.Paths.Editor[0] != '\0')
+    {
+        GetWindowText(hEditorArgsEdit, details.EditorArgs, sizeof(details.EditorArgs));
+    }
+    
+    SetPaths(&details);
+    
+    if(!CreateProjectDirectories(&details.Paths))
+    {
+        MessageBox(NULL, "Error: Could not create project directories!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    if(!CreateBatFiles(&details))
+    {
+        MessageBox(NULL, "Error: Could not create BAT files!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    if(!CreateProjectFiles(&details))
+    {
+        MessageBox(NULL, "Error: Could not create project files!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    if(IsDlgButtonChecked(window, APP_CKBOX_SHORTCUT))
+    {
+        if(!SUCCEEDED(CreateLauncherCMDShortcut(&details)))
+        {
+            return 0;
+        }
+    }
+    
+    return 1;
 }
 
-int GetDefaultConfirmation(default_inputs *Defaults)
+void ResetForm(HWND window)
 {
-    int Result = 0;
-    bool32 Answered = false;
-    char Input[256];
-
-    PrintDefaultDetails(Defaults);
-
-    while(!Answered)
-    {
-        printf_s("\n>Save Defaults? 1 -Yes | 2 -No, Redo | 0 -No, Return to Defaults Menu : ");
-		if(fgets(Input, sizeof(Input), stdin))
-		{
-            size_t InputCount = strcspn(Input, "\n");
-
-            if(InputCount == 1)
-            {
-                char Answer = Input[0];
-                Result = Answer - 48;
-                if(Result >= 0 && Result <= 2)
-                {
-                    Answered = true;
-                }
-            }
-		}
-    }
-
-    return Result;
+    SetWindowText(hProjectNameEdit, "");
+    //hSubstComboBox
+    SetWindowText(hProjRootPathEdit, "");
+    SetWindowText(hCompilerEdit, "");
+    SetWindowText(hCompilerArgsEdit, "");
+    SetWindowText(hCompilerFlagsEdit, "");
+    SetWindowText(hCompilerLinksEdit, "");
+    SetWindowText(hLinkFilesEdit, "");
+    SetWindowText(hDebuggerEdit, "");
+    SetWindowText(hDebuggerArgsEdit, "");
+    SetWindowText(hEditorEdit, "");
+    SetWindowText(hEditorArgsEdit, "");
+    CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
 }
 
-void CreateProject(project_details *ProjectDetails, default_inputs *Defaults)
+int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lpData)
 {
-    bool32 Redo = true;
-    int ProjectOption = 0;
-
-    printf_s("\n----- Create A Project -----\n");
-    
-    do
+    switch (uMsg)
     {
-        AskStartupQuestions(ProjectDetails, Defaults);
-        AskBuildQuestions(ProjectDetails, Defaults);
-
-        ProjectOption = GetProjectConfirmation(ProjectDetails);
-        if(ProjectOption != 2)
-        {
-            Redo = false;
-        }
-    }while(Redo);
-
-    if(ProjectOption == 1)
-    {
-        printf_s("\n Creating Project...\n");
-        printf_s("Creating Directories...\n");
-        CreateProjectDirectories(&ProjectDetails->Paths);
+        case BFFM_INITIALIZED:
+        // Set initial directory
+        // SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)"C:\\");
+        break;
+    }
     
-        printf_s("Creating Project Files...\n");
-        CreateProjectFiles(ProjectDetails);
+    return 0;
+}
 
-        printf_s("Creating .Bat Files...\n");
-        printf_s(" Creating Startup Bat File... ");
-        if(CreateStartupFile(ProjectDetails))
-        {
-            printf_s("Success!\n");
-        }
-        else
-        {
-            printf_s("Failed!\n");
-        }
+bool ShowFileDialog(HWND window, char* filePath, DWORD maxPath)
+{
+    OPENFILENAME ofn;
+    char szFile[MAX_PATH] = "";
+    
+    // Initialize OPENFILENAME structure
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = window;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+    
+    // File type filters
+    ofn.lpstrFilter = "Files (*.exe;*.bat)\0*.exe;*.bat\0";
+    
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.lpstrTitle = "Select File";
+    
+    // Flags
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+    
+    // Show the dialog
+    if(GetOpenFileName(&ofn))
+    {
+        strcpy_s(filePath, maxPath, szFile);
+        return 1;
+    }
+    
+    return 0;
+}
 
-        printf_s(" Creating Build Bat File... ");
-        if(CreateBuildFile(ProjectDetails))
+bool ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
+{
+    BROWSEINFO bi;
+    char displayName[MAX_PATH];
+    LPITEMIDLIST pidl;
+    
+    ZeroMemory(&bi, sizeof(bi));
+    bi.hwndOwner = window;
+    bi.pszDisplayName = displayName;
+    bi.lpszTitle = "Select Folder";
+    bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_EDITBOX;
+    bi.lpfn = BrowseCallbackProc;
+    
+    pidl = SHBrowseForFolder(&bi);
+    
+    if(pidl)
+    {
+        if(SHGetPathFromIDList(pidl, folderPath))
         {
-            printf_s("Success!\n");
-        }
-        else
-        {
-            printf_s("Failed!\n");
+            // Free the PIDL
+            CoTaskMemFree(pidl);
+            return 1;
         }
         
-        printf_s("Creating CMD Shortcut To Desktop... ");
-    
-        if(SUCCEEDED(CreateLauncherCMDShortcut(ProjectDetails)))
-        {
-            printf_s("Success!\n");
-        }
-        else
-        {
-            printf_s("Failed!\n");
-        }
-
-        printf_s("\nCompleted Creating Project!\n\n");
+        CoTaskMemFree(pidl);
     }
-}
-
-bool32 CreateDefaults(default_inputs *Defaults, char *DefaultsFileName)
-{
-    bool32 Result = false;
-    bool32 Redo = true;
-    int DefaultOption = 0;
     
-    printf_s("\n----- Create Defaults -----\n");
-
-    do
-    {
-        AskDefaultQuestions(Defaults);
-
-        //NOTE: Options: 1 - Save, 2 - Redo, 0 = Quit
-        DefaultOption = GetDefaultConfirmation(Defaults);
-        if(DefaultOption != 2)
-        {
-            Redo = false;
-        }
-    }while(Redo);
-
-    if(DefaultOption == 1)
-    {
-        printf_s("\n Saving Defaults... ");
-        if(SaveDefaults(Defaults, DefaultsFileName))
-        {
-            printf_s("Success!\n");
-            Result = true;
-        }
-        else
-        {
-            printf_s("Failed!");
-        }
-    }
-
-    return Result;
+    return 0;
 }
 
-bool32 DeleteDefaults(default_inputs *Defaults, char *DefaultFileName)
+void CreateMenu(HWND Window)
 {
-    *Defaults = {};
-    return !(remove(DefaultFileName));
+    HMENU Menu = CreateMenu();
+    
+    HMENU FileMenu = CreateMenu();
+    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_SAVE_PROJECT, "&Save Project");
+    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_LOAD_PROJECT, "&Load Project");
+    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_SAVE_DEFAULTS, "&Save Defaults");
+    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_LOAD_DEFAULTS, "&Load Defaults");
+    AppendMenu(FileMenu, MF_SEPARATOR, 0 , 0);
+    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_EXIT, "&Exit");
+    
+    HMENU HelpMenu = CreateMenu();
+    AppendMenu(HelpMenu, MF_STRING, APP_MENU_HELP_VIEW, "&View Help");
+    AppendMenu(HelpMenu, MF_STRING, APP_MENU_HELP_ABOUT, "&About");
+    
+    AppendMenu(Menu, MF_POPUP, (UINT_PTR)FileMenu, "&File");
+    AppendMenu(Menu, MF_POPUP, (UINT_PTR)HelpMenu, "&Help");
+    
+    SetMenu(Window, Menu);
 }
 
-void DefaultsMenu(default_inputs *Defaults, bool32 *HasDefaults, char *DefaultsFileName)
+void CreateProjectNameLine(HWND window, int yPos)
 {
-	char OptionBuffer[256] = { 0 };
-	bool32 Running = true;
-	char Input = 0;
-
-    do
-    {
-        printf_s("\n>Defaults Options: ");
-        if(*HasDefaults)
-        {
-            printf_s("1 -Change | 2 -View | 3 -Delete | ");
-        }
-        else
-        {
-            printf_s("1 -Create | ");
-        }
-        printf_s("0 -Main Menu\n");
-
-        bool32 Answered = false;
-
-        do
-        {
-            printf_s(": ");
-            if(fgets(OptionBuffer, sizeof(OptionBuffer), stdin))
-            {
-                StripSpaces(OptionBuffer, sizeof(OptionBuffer));
-                size_t BufferLength = strcspn(OptionBuffer, "\n");
-
-                if(BufferLength == 1)
-                {
-                    Input = OptionBuffer[0];
-
-                    switch(Input)
-                    {
-                        case '1':
-                        {
-                            if(CreateDefaults(Defaults, DefaultsFileName))
-                            {
-                                *HasDefaults = true;
-                                Answered = true;
-                            }
-                        }break;
-                        case '2':
-                        {
-                            if(*HasDefaults)
-                            {
-                                PrintDefaultDetails(Defaults);
-                                Answered = true;
-                            }
-                        }break;
-                        case '3':
-                        {
-                            if (*HasDefaults && DeleteDefaults(Defaults, DefaultsFileName))
-                            {
-                                *HasDefaults = false;
-                                Answered = true;
-                            }
-                        }break;
-                        case '0':
-                        {
-                            Running = false;
-                            Answered = true;
-                        }break;
-                    }
-                }
-            }
-        }while(!Answered);
-    }while(Running);
+    CreateWindow("STATIC", "Project Name:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hProjectNameEdit = CreateWindow("EDIT", "",
+                                    WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                    APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                    window, (HMENU)APP_EDIT_PROJECT_NAME, NULL, NULL);
 }
 
-void MainMenu(project_details *Details, default_inputs *Defaults, bool32 *IsDefaultsSet, char *DefaultsFileName)
+void CreateProjectRootPathLine(HWND window, int yPos)
 {
-    char OptionBuffer[256] = {0};
-    bool32 Running = true;
-    char Input = 0;
+    CreateWindow("STATIC", "Project Path:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hProjRootPathEdit = CreateWindow("EDIT", "",
+                                     WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                                     APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                     window, (HMENU)APP_EDIT_PROJECT_PATH, NULL, NULL);
+    
+    hProjRootPathBtn = CreateWindow("BUTTON", "...",
+                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                                    APP_FORM_DIALOG_BTN_X, yPos, APP_FORM_DIALOG_BTN_WIDTH, APP_FORM_LINE_HEIGHT,
+                                    window, (HMENU)APP_BTN_PROJECT_PATH, NULL, NULL);
+}
 
-    do
+void CreateSubstLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "SUBST:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hSubstComboBox = CreateWindow(
+                                  "COMBOBOX",
+                                  "",
+                                  WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
+                                  APP_FORM_SEC_ITEM_X, yPos, 50, 200,
+                                  window,
+                                  (HMENU)APP_COMBOBOX_SUBST_LETTER,
+                                  GetModuleHandle(NULL),
+                                  NULL
+                                  );
+    
+    //Fill with unused drive letters.
+    DWORD drives = GetLogicalDrives();
+    
+    // Check each drive letter from A to Z
+    for (int i = 0; i < 26; i++)
     {
-        printf_s("========= Main Menu =========\n\n");
-        printf_s(">Options: 1 -Create Project | 2 -Defaults | 3 -Help | 0 -Quit\n");
+        int driveLetter = 'A' + i;
         
-        bool32 Answered = false;
-
-        do
+        if (driveLetter == 'A' || driveLetter == 'B')
         {
-            printf_s(": ");
-            if(fgets(OptionBuffer, sizeof(OptionBuffer), stdin))
-            {
-                StripSpaces(OptionBuffer, sizeof(OptionBuffer));
-                size_t BufferLength = strcspn(OptionBuffer, "\n");
+            continue; // A and B are reserved for Floppy drives (The sounds of the A floppy still echos in mind)
+        }
+        
+        // Unused drive letters will have a 0 bit)
+        if (!(drives & (1 << i)))
+        {
+            char driveString[4];
+            sprintf_s(driveString, "%c:", driveLetter);
+            
+            // Add to combo box
+            SendMessage(hSubstComboBox, CB_ADDSTRING, 0, (LPARAM)driveString);
+        }
+    }
+    
+    // Select first item if any
+    if (SendMessage(hSubstComboBox, CB_GETCOUNT, 0, 0) > 0)
+    {
+        SendMessage(hSubstComboBox, CB_SETCURSEL, 0, 0);
+    }
+}
 
-                if(BufferLength == 1)
+void CreateCompilerLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Compiler:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hCompilerEdit = CreateWindow("EDIT", "",
+                                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                                 APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                 window, (HMENU)APP_EDIT_COMPILER, NULL, NULL);
+    
+    hCompilerPathBtn = CreateWindow("BUTTON", "...",
+                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                                    APP_FORM_DIALOG_BTN_X, yPos, APP_FORM_DIALOG_BTN_WIDTH, APP_FORM_LINE_HEIGHT,
+                                    window, (HMENU)APP_BTN_COMPILER_PATH, NULL, NULL);
+}
+
+void CreateCompilerArgsLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Compiler Start Args:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hCompilerArgsEdit = CreateWindow("EDIT", "",
+                                     WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                     APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                     window, (HMENU)APP_EDIT_COMPILER_ARGS, NULL, NULL);
+}
+
+void CreateCompilerFlagsLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Compiler Flags:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hCompilerFlagsEdit = CreateWindow("EDIT", "",
+                                      WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                      APP_FORM_SEC_ITEM_X,yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                      window, (HMENU)APP_EDIT_COMPILER_FLAGS, NULL, NULL);
+}
+
+void CreateCompilerLinksLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Compiler Linker Flags:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hCompilerLinksEdit = CreateWindow("EDIT", "",
+                                      WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                      APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                      window, (HMENU)APP_EDIT_COMPILER_LINKS, NULL, NULL);
+}
+
+void CreateLinkFilesLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Link Files:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hLinkFilesEdit = CreateWindow("EDIT", "",
+                                  WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                  APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                  window, (HMENU)APP_EDIT_LINK_FILES, NULL, NULL);
+}
+
+void CreateDebuggerLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Debugger:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hDebuggerEdit = CreateWindow("EDIT", "",
+                                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                                 APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                 window, (HMENU)APP_EDIT_DEBUGGER, NULL, NULL);
+    
+    hDebuggerPathBtn = CreateWindow("BUTTON", "...",
+                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                                    APP_FORM_DIALOG_BTN_X, yPos, APP_FORM_DIALOG_BTN_WIDTH, APP_FORM_LINE_HEIGHT,
+                                    window, (HMENU)APP_BTN_DEBUGGER_PATH, NULL, NULL);
+}
+
+void CreateDebuggerArgsLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Debugger Args:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hDebuggerArgsEdit = CreateWindow("EDIT", "",
+                                     WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                     APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                     window, (HMENU)APP_EDIT_COMPILER_ARGS, NULL, NULL);
+}
+
+void CreateEditorLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Editor/IDE:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hEditorEdit = CreateWindow("EDIT", "",
+                               WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                               APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                               window, (HMENU)APP_EDIT_EDITOR, NULL, NULL);
+    
+    hEditorPathBtn = CreateWindow("BUTTON", "...",
+                                  WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                                  APP_FORM_DIALOG_BTN_X, yPos, APP_FORM_DIALOG_BTN_WIDTH, APP_FORM_LINE_HEIGHT,
+                                  window, (HMENU)APP_BTN_EDITOR_PATH, NULL, NULL);
+}
+
+void CreateEditorArgsLine(HWND window, int yPos)
+{
+    CreateWindow("STATIC", "Editor Args:", WS_VISIBLE | WS_CHILD | SS_RIGHT,
+                 APP_FORM_X, yPos, APP_FORM_LABEL_WIDTH, APP_FORM_LINE_HEIGHT,
+                 window, NULL, NULL, NULL);
+    
+    hEditorArgsEdit = CreateWindow("EDIT", "",
+                                   WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                   APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
+                                   window, (HMENU)APP_EDIT_COMPILER_ARGS, NULL, NULL);
+}
+
+void CreateShortCutLine(HWND window, int yPos)
+{
+    hShortCutCkBox = CreateWindow("BUTTON", "Create Desktop Shortcut",
+                                  WS_VISIBLE | WS_CHILD | BS_CHECKBOX,
+                                  APP_FORM_SEC_ITEM_X, yPos, 185, 35,        
+                                  window, (HMENU)APP_CKBOX_SHORTCUT, NULL, NULL);
+}
+
+void CreateControlsLine(HWND window, int yPos)
+{
+    hCreateBtn = CreateWindow("BUTTON", "Create",
+                              WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                              APP_FORM_CTRL_BTN_X, yPos, APP_FORM_CTRL_BTN_WIDTH, APP_FORM_LINE_HEIGHT,
+                              window, (HMENU)APP_BTN_CREATE, NULL, NULL);
+    
+    hResetBtn = CreateWindow("BUTTON", "Reset",
+                             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                             APP_FORM_CTRL_BTN_X + APP_FORM_CTRL_BTN_WIDTH + 10, yPos, APP_FORM_CTRL_BTN_WIDTH, APP_FORM_LINE_HEIGHT,
+                             window, (HMENU)APP_BTN_RESET, NULL, NULL);
+}
+
+void CreateMainForm(HWND window)
+{
+    int yPosStep = APP_FORM_LINE_HEIGHT + APP_FORM_LINE_GAP;
+    int lineYPos = APP_FORM_LINE_START_Y;
+    
+    CreateProjectNameLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateProjectRootPathLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateSubstLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateCompilerLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateCompilerArgsLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateCompilerFlagsLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateCompilerLinksLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateLinkFilesLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateDebuggerLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateDebuggerArgsLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateEditorLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateEditorArgsLine(window, lineYPos);
+    
+    lineYPos += yPosStep;
+    CreateShortCutLine(window, lineYPos);
+    
+    lineYPos += yPosStep + 20;
+    CreateControlsLine(window, lineYPos);
+}
+
+void CreateWindowForm(HWND window)
+{
+    CreateMenu(window);
+    CreateMainForm(window);
+}
+
+LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+        case WM_CREATE:
+        {
+            CreateWindowForm(window);
+            
+            break;
+        }
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            BeginPaint(window, &ps);
+            EndPaint(window, &ps);
+            
+            break;
+        }
+        
+        case WM_COMMAND:
+        {
+            int lWord = LOWORD(wParam);
+            int hWord = HIWORD(wParam);
+            
+            char filePath[MAX_PATH * 10];
+            
+            switch (lWord)
+            {
+                case APP_MENU_FILE_EXIT:
                 {
-                    Input = OptionBuffer[0];
-                    switch(Input)
+                    PostQuitMessage(0);
+                    break;
+                }
+                
+                case APP_BTN_PROJECT_PATH:
+                {
+                    if (hWord == BN_CLICKED)
                     {
-                        case '1': // Create Project
+                        if(ShowFolderDialog(window, filePath, sizeof(filePath)))
                         {
-                            CreateProject(Details, Defaults);
-                            Answered = true;
-                        }break;
-                        case '2': // Defaults Menu
-                        {
-                            DefaultsMenu(Defaults, IsDefaultsSet, DefaultsFileName);
-                            Answered = true;
-                        }break;
-                        case '3': // Help
-                        {
-                            DisplayHelp();
-                            Answered = true;
-                        }break;
-                        case '0': // Quit
-                        {
-                            Running = false;
-                            Answered = true;
+                            SetWindowText(hProjRootPathEdit, filePath);
                         }
                     }
+                    
+                    break;
+                }
+                
+                case APP_BTN_COMPILER_PATH:
+                {
+                    if(hWord == BN_CLICKED)
+                    {
+                        if(ShowFileDialog(window, filePath, sizeof(filePath)))
+                        {
+                            SetWindowText(hCompilerEdit, filePath);
+                        }
+                    }
+                    
+                    break;
+                }
+                
+                case APP_BTN_DEBUGGER_PATH:
+                {
+                    if(hWord == BN_CLICKED)
+                    {
+                        if(ShowFileDialog(window, filePath, sizeof(filePath)))
+                        {
+                            SetWindowText(hDebuggerEdit, filePath);
+                        }
+                    }
+                    
+                    break;
+                }
+                
+                case APP_BTN_EDITOR_PATH:
+                {
+                    if(hWord == BN_CLICKED)
+                    {
+                        if(ShowFileDialog(window, filePath, sizeof(filePath)))
+                        {
+                            SetWindowText(hEditorEdit, filePath);
+                        }
+                    }
+                    
+                    break;
+                }
+                
+                case APP_CKBOX_SHORTCUT:
+                {
+                    if (IsDlgButtonChecked(window, APP_CKBOX_SHORTCUT))
+                    {
+                        CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
+                    }
+                    else
+                    {
+                        CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_CHECKED);
+                    }
+                    
+                    break;
+                }
+                
+                case APP_BTN_CREATE:
+                {
+                    if(hWord == BN_CLICKED)
+                    {
+                        if(CreateProject(window))
+                        {
+                            MessageBox(NULL, "Project Created!", "Success", NULL);
+                        }
+                        else
+                        {
+                            MessageBox(NULL, "Failed To Create Project!", "Error", NULL);
+                        }
+                    }
+                    
+                    break;
+                }
+                
+                case APP_BTN_RESET:
+                {
+                    if(hWord == BN_CLICKED)
+                    {
+                        ResetForm(window);
+                    }
+                    
+                    break;
                 }
             }
-        }while(!Answered);
-    }while(Running);
+            
+            break;
+        }
+        
+        case WM_DESTROY:
+        {
+            PostQuitMessage(0);
+            break;
+        }
+        
+        default:
+        {
+            return DefWindowProc(window, uMsg, wParam, lParam);
+        }
+    }
+    
+    return 0;
 }
 
-int main(void)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    //TODO: Finish Help display.
-    project_details ProjectDetails = {};
-    default_inputs Defaults = {};
-    char *DefaultsFileName = "devprojectbulider.dft";
-    bool32 HasDefaults = GetDefaultsFromFile(&Defaults, DefaultsFileName);
-
-    printf_s(":::: :: Development Project Builder :: ::::\n\n");
-
-    MainMenu(&ProjectDetails, &Defaults, &HasDefaults, DefaultsFileName);
+    const char* className = "DevProjectBuilder";
+    
+    // Initialize common controls
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_BAR_CLASSES;
+    InitCommonControlsEx(&icex);
+    
+    // Register window class
+    WNDCLASS wc = {0};
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = className;
+    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    
+    if (!RegisterClass(&wc))
+    {
+        MessageBox(NULL, "Window Registration Failed!", "Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+    
+    // Create main window
+    HWND hwnd = CreateWindow(
+                             className,
+                             "Dev Project Builder",
+                             WS_OVERLAPPEDWINDOW,
+                             CW_USEDEFAULT, CW_USEDEFAULT,
+                             780, 530,
+                             NULL, NULL, hInstance, NULL
+                             );
+    
+    if (!hwnd)
+    {
+        MessageBox(NULL, "Window Creation Failed!", "Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+    
+    ShowWindow(hwnd, nCmdShow);
+    UpdateWindow(hwnd);
+    
+    // Message loop
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0) > 0)
+    {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
     
     return 0;
 }
