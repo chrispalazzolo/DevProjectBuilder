@@ -856,26 +856,31 @@ bool ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
     return 0;
 }
 
-void CreateMenu(HWND Window)
+void CreateMenu(HWND window)
 {
-    HMENU Menu = CreateMenu();
+    HMENU hProjectMenu = CreateMenu();
+    AppendMenu(hProjectMenu, MF_STRING, APP_MENU_FILE_SAVE_PROJECT, "&Save");
+    AppendMenu(hProjectMenu, MF_STRING, APP_MENU_FILE_LOAD_PROJECT, "&Load");
     
-    HMENU FileMenu = CreateMenu();
-    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_SAVE_PROJECT, "&Save Project");
-    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_LOAD_PROJECT, "&Load Project");
-    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_SAVE_DEFAULTS, "&Save Defaults");
-    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_LOAD_DEFAULTS, "&Load Defaults");
-    AppendMenu(FileMenu, MF_SEPARATOR, 0 , 0);
-    AppendMenu(FileMenu, MF_STRING, APP_MENU_FILE_EXIT, "&Exit");
+    HMENU hDefaultsMenu = CreateMenu();
+    AppendMenu(hDefaultsMenu, MF_STRING, APP_MENU_FILE_SAVE_DEFAULTS, "&Save");
+    AppendMenu(hDefaultsMenu, MF_STRING, APP_MENU_FILE_LOAD_DEFAULTS, "&Load");
     
-    HMENU HelpMenu = CreateMenu();
-    AppendMenu(HelpMenu, MF_STRING, APP_MENU_HELP_VIEW, "&View Help");
-    AppendMenu(HelpMenu, MF_STRING, APP_MENU_HELP_ABOUT, "&About");
+    HMENU hFileMenu = CreateMenu();
+    AppendMenu(hFileMenu, MF_POPUP, (UINT_PTR)hProjectMenu, "&Project");
+    AppendMenu(hFileMenu, MF_POPUP, (UINT_PTR)hDefaultsMenu, "&Defaults");
+    AppendMenu(hFileMenu, MF_SEPARATOR, 0 , 0);
+    AppendMenu(hFileMenu, MF_STRING, APP_MENU_FILE_EXIT, "&Exit");
     
-    AppendMenu(Menu, MF_POPUP, (UINT_PTR)FileMenu, "&File");
-    AppendMenu(Menu, MF_POPUP, (UINT_PTR)HelpMenu, "&Help");
+    HMENU hHelpMenu = CreateMenu();
+    AppendMenu(hHelpMenu, MF_STRING, APP_MENU_HELP_VIEW, "&View Help");
+    AppendMenu(hHelpMenu, MF_STRING, APP_MENU_HELP_ABOUT, "&About");
     
-    SetMenu(Window, Menu);
+    HMENU hMenu = CreateMenu();
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hFileMenu, "&File");
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hHelpMenu, "&Help");
+    
+    SetMenu(window, hMenu);
 }
 
 void CreateProjectNameLine(HWND window, int yPos)
@@ -885,7 +890,7 @@ void CreateProjectNameLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hProjectNameEdit = CreateWindow("EDIT", "",
-                                    WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                    WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                     APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                     window, (HMENU)APP_EDIT_PROJECT_NAME, NULL, NULL);
 }
@@ -897,7 +902,7 @@ void CreateProjectRootPathLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hProjRootPathEdit = CreateWindow("EDIT", "",
-                                     WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                                     WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY | ES_AUTOHSCROLL,
                                      APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                      window, (HMENU)APP_EDIT_PROJECT_PATH, NULL, NULL);
     
@@ -962,7 +967,7 @@ void CreateCompilerLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hCompilerEdit = CreateWindow("EDIT", "",
-                                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY | ES_AUTOHSCROLL,
                                  APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                  window, (HMENU)APP_EDIT_COMPILER, NULL, NULL);
     
@@ -979,7 +984,7 @@ void CreateCompilerArgsLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hCompilerArgsEdit = CreateWindow("EDIT", "",
-                                     WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                     WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                      APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                      window, (HMENU)APP_EDIT_COMPILER_ARGS, NULL, NULL);
 }
@@ -991,7 +996,7 @@ void CreateCompilerFlagsLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hCompilerFlagsEdit = CreateWindow("EDIT", "",
-                                      WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                      WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                       APP_FORM_SEC_ITEM_X,yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                       window, (HMENU)APP_EDIT_COMPILER_FLAGS, NULL, NULL);
 }
@@ -1003,7 +1008,7 @@ void CreateCompilerLinksLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hCompilerLinksEdit = CreateWindow("EDIT", "",
-                                      WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                      WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                       APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                       window, (HMENU)APP_EDIT_COMPILER_LINKS, NULL, NULL);
 }
@@ -1015,7 +1020,7 @@ void CreateLinkFilesLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hLinkFilesEdit = CreateWindow("EDIT", "",
-                                  WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                  WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                   APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                   window, (HMENU)APP_EDIT_LINK_FILES, NULL, NULL);
 }
@@ -1027,7 +1032,7 @@ void CreateDebuggerLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hDebuggerEdit = CreateWindow("EDIT", "",
-                                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY | ES_AUTOHSCROLL,
                                  APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                  window, (HMENU)APP_EDIT_DEBUGGER, NULL, NULL);
     
@@ -1044,7 +1049,7 @@ void CreateDebuggerArgsLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hDebuggerArgsEdit = CreateWindow("EDIT", "",
-                                     WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                     WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                      APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                      window, (HMENU)APP_EDIT_COMPILER_ARGS, NULL, NULL);
 }
@@ -1056,7 +1061,7 @@ void CreateEditorLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hEditorEdit = CreateWindow("EDIT", "",
-                               WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY,
+                               WS_CHILD | WS_VISIBLE | WS_BORDER | ES_READONLY | ES_AUTOHSCROLL,
                                APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                window, (HMENU)APP_EDIT_EDITOR, NULL, NULL);
     
@@ -1073,7 +1078,7 @@ void CreateEditorArgsLine(HWND window, int yPos)
                  window, NULL, NULL, NULL);
     
     hEditorArgsEdit = CreateWindow("EDIT", "",
-                                   WS_CHILD | WS_VISIBLE | WS_BORDER,
+                                   WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                                    APP_FORM_SEC_ITEM_X, yPos, APP_FORM_EDIT_WIDTH, APP_FORM_LINE_HEIGHT,
                                    window, (HMENU)APP_EDIT_COMPILER_ARGS, NULL, NULL);
 }
@@ -1180,6 +1185,29 @@ LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam
             
             switch (lWord)
             {
+                case APP_MENU_FILE_SAVE_PROJECT:
+                {
+                    
+                    break;
+                }
+                
+                case APP_MENU_FILE_LOAD_PROJECT:
+                {
+                    
+                    break;
+                }
+                
+                case APP_MENU_FILE_SAVE_DEFAULTS:
+                {
+                    
+                    break;
+                }
+                
+                case APP_MENU_FILE_LOAD_DEFAULTS:
+                {
+                    
+                    break;
+                }
                 case APP_MENU_FILE_EXIT:
                 {
                     PostQuitMessage(0);
