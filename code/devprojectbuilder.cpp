@@ -659,7 +659,7 @@ void GetFileName(char *fileName, int sizeOfFileName, char *filePath)
 void ResetForm(HWND window)
 {
     SetWindowText(hProjectNameEdit, "");
-    //hSubstComboBox
+    SendMessage(hSubstComboBox, CB_SETCURSEL, (WPARAM)0, 0);//reset combobox to first item
     SetWindowText(hProjRootPathEdit, "");
     SetWindowText(hCompilerEdit, "");
     SetWindowText(hCompilerArgsEdit, "");
@@ -673,12 +673,12 @@ void ResetForm(HWND window)
     CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
 }
 
-void FillForm(project_details *details)
+void FillForm(HWND window, project_details *details)
 {
     if(details != NULL)
     {
         SetWindowText(hProjectNameEdit, details->ProjectName);
-        //hSubstComboBox
+        SendMessage(hSubstComboBox, CB_SETCURSEL, (WPARAM)details->SubStDriveLetterIndex, 0);
         SetWindowText(hProjRootPathEdit, details->Paths.Root);
         SetWindowText(hCompilerEdit, details->Paths.Compiler);
         SetWindowText(hCompilerArgsEdit, details->CompilerArgs);
@@ -689,11 +689,19 @@ void FillForm(project_details *details)
         SetWindowText(hDebuggerArgsEdit, details->DebuggerArgs);
         SetWindowText(hEditorEdit, details->Paths.Editor);
         SetWindowText(hEditorArgsEdit, details->EditorArgs);
-        //CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
+        
+        int isChecked = BST_CHECKED;
+        
+        if(!details->CreateShortCut)
+        {
+            isChecked = BST_UNCHECKED;
+        }
+        
+        CheckDlgButton(window, APP_CKBOX_SHORTCUT, isChecked);
     }
 }
 
-bool32 GetFormValues(project_details *details, int dataForFlag)
+bool32 GetFormValues(HWND window, project_details *details, int dataForFlag)
 {
     details->ProjectName[0] = '\0';
     GetWindowText(hProjectNameEdit, details->ProjectName, sizeof(details->ProjectName));
@@ -721,6 +729,7 @@ bool32 GetFormValues(project_details *details, int dataForFlag)
         return 0;
     }
     
+    details->SubStDriveLetterIndex = (int)SendMessage(hSubstComboBox, CB_GETCURSEL, 0, 0);
     GetWindowText(hSubstComboBox, details->SubStDriveLetter, sizeof(details->SubStDriveLetter));
     
     details->Paths.Compiler[0] = '\0';
@@ -767,165 +776,20 @@ bool32 GetFormValues(project_details *details, int dataForFlag)
     
     SetPaths(details);
     
-    return 1;
-}
-
-bool32 SaveProject(HWND window)
-{
-    project_details projectDetails = {};
-    char saveFile[256] = "";
-    
-    if(!GetFormValues(&projectDetails, SAVE_PROJECT))
-    {
-        return 0;
-    }
-    
-    if(!ShowSaveFileDialog(window, saveFile, 256, SAVE_PROJECT))
-    {
-        return 0;
-    }
-    
-    if(!SaveData(&projectDetails, saveFile))
-    {
-        //MessageBox
-        return 0;
-    }
+    details->CreateShortCut = IsDlgButtonChecked(window, APP_CKBOX_SHORTCUT);
     
     return 1;
 }
 
-bool32 LoadProject(HWND window)
-{
-    project_details projectDetails = {};
-    
-    char loadFile[256] = "";
-    
-    if(!ShowOpenFileDialog(window, loadFile, 256, LOAD_PROJECT))
-    {
-        return 0;
-    }
-    
-    if(!LoadData(&projectDetails, loadFile))
-    {
-        //MessageBox
-        return 0;
-    }
-    
-    ResetForm(window);
-    FillForm(&projectDetails);
-    
-    return 1;
-}
-
-bool32 SaveDefaults(HWND window)
-{
-    project_details defaults = {};
-    char saveFile[256] = "";
-    
-    if(!GetFormValues(&defaults, SAVE_DEFAULTS))
-    {
-        return 0;
-    }
-    
-    if(!ShowSaveFileDialog(window, saveFile, 256, SAVE_DEFAULTS))
-    {
-        return 0;
-    }
-    
-    if(!SaveData(&defaults, saveFile))
-    {
-        //MessageBox
-        return 0;
-    }
-    
-    return 1;
-}
-
-bool32 LoadDefaults(HWND window)
-{
-    project_details defaults = {};
-    
-    char loadFile[256] = "";
-    
-    if(!ShowOpenFileDialog(window, loadFile, 256, LOAD_DEFAULTS))
-    {
-        return 0;
-    }
-    
-    if(!LoadData(&defaults, loadFile))
-    {
-        //MessageBox
-        return 0;
-    }
-    
-    ResetForm(window);
-    FillForm(&defaults);
-    
-    return 1;
-}
-
-bool32 CreateProject(HWND window)
-{
-    project_details details = {};
-    
-    if(!GetFormValues(&details, CREATE_PROJECT))
-    {
-        return 0;
-    }
-    
-    if(!CreateProjectDirectories(&details.Paths))
-    {
-        MessageBox(NULL, "Error: Could not create project directories!", "Create Project Error", NULL);
-        return 0;
-    }
-    
-    if(!CreateBatFiles(&details))
-    {
-        MessageBox(NULL, "Error: Could not create BAT files!", "Create Project Error", NULL);
-        return 0;
-    }
-    
-    if(!CreateProjectFiles(&details))
-    {
-        MessageBox(NULL, "Error: Could not create project files!", "Create Project Error", NULL);
-        return 0;
-    }
-    
-    if(IsDlgButtonChecked(window, APP_CKBOX_SHORTCUT))
-    {
-        if(!SUCCEEDED(CreateLauncherCMDShortcut(&details)))
-        {
-            return 0;
-        }
-    }
-    
-    return 1;
-}
-
-int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lpData)
-{
-    switch (uMsg)
-    {
-        case BFFM_INITIALIZED:
-        // Set initial directory
-        // SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)"C:\\");
-        break;
-    }
-    
-    return 0;
-}
-
-bool32 ShowSaveFileDialog(HWND window, char* filePath, DWORD maxPath, int saveReasonFlag)
+bool32 ShowSaveFileDialog(HWND window, char* saveName, char* filePath, DWORD maxPath, int saveReasonFlag)
 {
     OPENFILENAME ofn;
-    char fileName[256] = "";
-    
     ZeroMemory(&ofn, sizeof(ofn));
     
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = window;
-    ofn.lpstrFile = fileName;
-    ofn.nMaxFile = sizeof(fileName);
+    ofn.lpstrFile = saveName;
+    ofn.nMaxFile = 256;
     
     if(saveReasonFlag == SAVE_PROJECT)
     {
@@ -941,26 +805,28 @@ bool32 ShowSaveFileDialog(HWND window, char* filePath, DWORD maxPath, int saveRe
     ofn.nFilterIndex = 1;
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
     
-    if (GetSaveFileName(&ofn))
+    //Show the Save As file dialog
+    if (!GetSaveFileName(&ofn))
     {
-        strcpy_s(filePath, maxPath, fileName);
-        return 1;
+        return 0;
     }
     
-    return 0;
+    strcpy_s(filePath, maxPath, saveName);
+    
+    return 1;
 }
 
 bool32 ShowOpenFileDialog(HWND window, char* filePath, DWORD maxPath, int openReasonFlag)
 {
     OPENFILENAME ofn;
-    char szFile[256] = "";
+    char openFile[256] = "";
     
     // Initialize OPENFILENAME structure
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = window;
-    ofn.lpstrFile = szFile;
-    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFile = openFile;
+    ofn.nMaxFile = sizeof(openFile);
     
     // File type filters
     switch(openReasonFlag)
@@ -990,17 +856,17 @@ bool32 ShowOpenFileDialog(HWND window, char* filePath, DWORD maxPath, int openRe
     ofn.lpstrInitialDir = NULL;
     ofn.lpstrTitle = "Select File";
     
-    // Flags
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
     
-    // Show the dialog
-    if(GetOpenFileName(&ofn))
+    // Show the Open file dialog
+    if(!GetOpenFileName(&ofn))
     {
-        strcpy_s(filePath, maxPath, szFile);
-        return 1;
+        return 0;
     }
     
-    return 0;
+    strcpy_s(filePath, maxPath, openFile);
+    
+    return 1;
 }
 
 bool32 ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
@@ -1018,16 +884,141 @@ bool32 ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
     
     pidl = SHBrowseForFolder(&bi);
     
-    if(pidl)
+    if(!pidl)
     {
-        if(SHGetPathFromIDList(pidl, folderPath))
+        return 0;
+    }
+    
+    if(!SHGetPathFromIDList(pidl, folderPath))
+    {
+        return 0;
+    }
+    
+    CoTaskMemFree(pidl);
+    
+    return 1;
+}
+
+bool32 Save(HWND window, int saveWhat)
+{
+    project_details details = {};
+    char saveFile[256] = "";
+    char saveName[256] = "";
+    
+    if(!GetFormValues(window, &details, saveWhat))
+    {
+        return 0;
+    }
+    
+    if(saveWhat == SAVE_PROJECT)
+    {
+        strcpy_s(saveName, sizeof(saveName), details.ProjectName);
+    }
+    
+    if(!ShowSaveFileDialog(window, saveName, saveFile, 256, saveWhat))
+    {
+        return 0;
+    }
+    
+    if(!SaveData(&details, saveFile))
+    {
+        char saveErrorMsgTitle[20] = "";
+        
+        if(saveWhat == SAVE_PROJECT)
         {
-            // Free the PIDL
-            CoTaskMemFree(pidl);
-            return 1;
+            strcpy_s(saveErrorMsgTitle, 20, "Save Project");
+        }
+        else
+        {
+            strcpy_s(saveErrorMsgTitle, 20, "Save Defaults");
         }
         
-        CoTaskMemFree(pidl);
+        MessageBox(NULL, "Error: Saving File", saveErrorMsgTitle, NULL);
+        return 0;
+    }
+    
+    return 1;
+}
+
+bool32 Load(HWND window, int loadWhat)
+{
+    project_details details = {};
+    char loadFile[256] = "";
+    
+    if(!ShowOpenFileDialog(window, loadFile, 256, loadWhat))
+    {
+        return 0;
+    }
+    
+    if(!LoadData(&details, loadFile))
+    {
+        char loadErrorMsgTitle[20] = "";
+        
+        if(loadWhat == LOAD_PROJECT)
+        {
+            strcpy_s(loadErrorMsgTitle, 20, "Load Project");
+        }
+        else
+        {
+            strcpy_s(loadErrorMsgTitle, 20, "Load Defaults");
+        }
+        
+        MessageBox(NULL, "Error: Loading data from file", loadErrorMsgTitle, NULL);
+        return 0;
+    }
+    
+    ResetForm(window);
+    FillForm(window, &details);
+    
+    return 1;
+}
+
+bool32 CreateProject(HWND window)
+{
+    project_details details = {};
+    
+    if(!GetFormValues(window, &details, CREATE_PROJECT))
+    {
+        return 0;
+    }
+    
+    if(!CreateProjectDirectories(&details.Paths))
+    {
+        MessageBox(NULL, "Error: Could not create project directories!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    if(!CreateBatFiles(&details))
+    {
+        MessageBox(NULL, "Error: Could not create BAT files!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    if(!CreateProjectFiles(&details))
+    {
+        MessageBox(NULL, "Error: Could not create project files!", "Create Project Error", NULL);
+        return 0;
+    }
+    
+    if(details.CreateShortCut)
+    {
+        if(!SUCCEEDED(CreateLauncherCMDShortcut(&details)))
+        {
+            return 0;
+        }
+    }
+    
+    return 1;
+}
+
+int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+    switch (uMsg)
+    {
+        case BFFM_INITIALIZED:
+        // Set initial directory
+        // SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)"C:\\");
+        break;
     }
     
     return 0;
@@ -1364,43 +1355,28 @@ LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam
             {
                 case APP_MENU_FILE_SAVE_PROJECT:
                 {
-                    if(SaveProject(window))
-                    {
-                        //do something
-                    }
-                    
+                    Save(window, SAVE_PROJECT);
                     break;
                 }
                 
                 case APP_MENU_FILE_LOAD_PROJECT:
                 {
-                    if(LoadProject(window))
-                    {
-                        //do something
-                    }
-                    
+                    Load(window, LOAD_PROJECT);
                     break;
                 }
                 
                 case APP_MENU_FILE_SAVE_DEFAULTS:
                 {
-                    if(SaveDefaults(window))
-                    {
-                        //do something
-                    }
-                    
+                    Save(window, SAVE_DEFAULTS);
                     break;
                 }
                 
                 case APP_MENU_FILE_LOAD_DEFAULTS:
                 {
-                    if(LoadDefaults(window))
-                    {
-                        //do something
-                    }
-                    
+                    Load(window, LOAD_DEFAULTS);
                     break;
                 }
+                
                 case APP_MENU_FILE_EXIT:
                 {
                     PostQuitMessage(0);

@@ -98,6 +98,7 @@ extern "C" {
         char ProjectFolderName[256];
         char ProjectFileNameLower[256];
         char ProjectFileNameUpper[256];
+        int SubStDriveLetterIndex;
         char SubStDriveLetter[2];
         char CompilerArgs[256];
         char CompilerFlags[256];
@@ -106,6 +107,7 @@ extern "C" {
         char DebuggerFile[256];
         char DebuggerArgs[256];
         char EditorArgs[256];
+        int CreateShortCut;
     }project_details;
     
     typedef struct CMD_SHORTCUT_INFO
@@ -148,13 +150,11 @@ extern "C" {
     void ResetForm(HWND window);
     void FillForm(project_details *details);
     bool32 GetFormValues(project_details *details, int dataForFlag);
-    bool32 SaveProject(HWND window);
-    bool32 LoadProject(HWND window);
-    bool32 SaveDefaults(HWND window);
-    bool32 LoadDefaults(HWND window);
+    bool32 Save(HWND window, int saveWhat);
+    bool32 Load(HWND window, int loadWhat);
     bool32 CreateProject(HWND window);
     int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lpData);
-    bool32 ShowSaveFileDialog(HWND window, char* filePath, DWORD maxPath, int saveReasonFlag);
+    bool32 ShowSaveFileDialog(HWND window, char* saveName, char* filePath, DWORD maxPath, int saveReasonFlag);
     bool32 ShowOpenFileDialog(HWND window, char* filePath, DWORD maxPath, int openReasonFlag);
     bool32 ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath);
     void CreateMenuBar(HWND window);
