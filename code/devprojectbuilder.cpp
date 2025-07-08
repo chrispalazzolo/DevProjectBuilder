@@ -488,41 +488,41 @@ bool32 CreateBatFiles(project_details *Details)
     return 1;
 }
 
-// NOTE: Passing file name just in case I want to set up multiple defaults
-bool32 SaveDefaults(default_inputs *Defaults, char *FileName)
+bool32 SaveData(project_details *Data, char *FileName)
 {
-    bool32 Result = false;
-    
-    if(Defaults != NULL && FileName != NULL)
+    if(Data == NULL || FileName == NULL)
     {
-        FILE *File;
-        errno_t Error = fopen_s(&File, FileName, "wb");
-        
-        if(!Error)
-        {
-            fwrite(Defaults, sizeof(default_inputs), 1, File);
-            fclose(File);
-            Result = true;
-        }
+        return 0;
     }
-    
-    return Result;
-}
-
-bool32 GetDefaultsFromFile(default_inputs *Defaults, char *FileName)
-{
-    bool32 Result = false;
     
     FILE *File;
-    errno_t Error = fopen_s(&File, FileName, "rb");
-    if(!Error)
+    errno_t Error = fopen_s(&File, FileName, "wb"); // not sure how I want to handle the errno
+    
+    if(Error)
     {
-        fread(Defaults, sizeof(default_inputs), 1, File);
-        fclose(File);
-        Result = true;
+        return 0;
     }
     
-    return Result;
+    fwrite(Data, sizeof(project_details), 1, File);
+    fclose(File);
+    
+    return 1;
+}
+
+bool32 LoadData(project_details *Data, char *FileName)
+{
+    FILE *File;
+    errno_t Error = fopen_s(&File, FileName, "rb");
+    
+    if(Error)
+    {
+        return 0;
+    }
+    
+    fread(Data, sizeof(project_details), 1, File);
+    fclose(File);
+    
+    return 1;
 }
 // === End Files Functions =====================================================================
 
@@ -656,82 +656,222 @@ void GetFileName(char *fileName, int sizeOfFileName, char *filePath)
 // === End Util Functions ================================================================================
 
 // === Main Project Functions ==========================================================================================
-bool CreateProject(HWND window)
+void ResetForm(HWND window)
 {
-    project_details details = {};
+    SetWindowText(hProjectNameEdit, "");
+    //hSubstComboBox
+    SetWindowText(hProjRootPathEdit, "");
+    SetWindowText(hCompilerEdit, "");
+    SetWindowText(hCompilerArgsEdit, "");
+    SetWindowText(hCompilerFlagsEdit, "");
+    SetWindowText(hCompilerLinksEdit, "");
+    SetWindowText(hLinkFilesEdit, "");
+    SetWindowText(hDebuggerEdit, "");
+    SetWindowText(hDebuggerArgsEdit, "");
+    SetWindowText(hEditorEdit, "");
+    SetWindowText(hEditorArgsEdit, "");
+    CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
+}
+
+void FillForm(project_details *details)
+{
+    if(details != NULL)
+    {
+        SetWindowText(hProjectNameEdit, details->ProjectName);
+        //hSubstComboBox
+        SetWindowText(hProjRootPathEdit, details->Paths.Root);
+        SetWindowText(hCompilerEdit, details->Paths.Compiler);
+        SetWindowText(hCompilerArgsEdit, details->CompilerArgs);
+        SetWindowText(hCompilerFlagsEdit, details->CompilerFlags);
+        SetWindowText(hCompilerLinksEdit, details->CompilerLinkerFlags);
+        SetWindowText(hLinkFilesEdit, details->LinkFiles);
+        SetWindowText(hDebuggerEdit, details->Paths.Debugger);
+        SetWindowText(hDebuggerArgsEdit, details->DebuggerArgs);
+        SetWindowText(hEditorEdit, details->Paths.Editor);
+        SetWindowText(hEditorArgsEdit, details->EditorArgs);
+        //CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
+    }
+}
+
+bool32 GetFormValues(project_details *details, int dataForFlag)
+{
+    details->ProjectName[0] = '\0';
+    GetWindowText(hProjectNameEdit, details->ProjectName, sizeof(details->ProjectName));
     
-    details.ProjectName[0] = '\0';
-    GetWindowText(hProjectNameEdit, details.ProjectName, sizeof(details.ProjectName));
-    
-    if(details.ProjectName[0] == '\0')
+    if(dataForFlag == CREATE_PROJECT && details->ProjectName[0] == '\0')
     {
         MessageBox(NULL, "Please provide a name for the project!", "Create Project Error", NULL);
         return 0;
     }
     
-    if(ContainsSpace(details.ProjectName))
+    if(dataForFlag == CREATE_PROJECT && ContainsSpace(details->ProjectName))
     {
         MessageBox(NULL, "No spaces are allow in project name!", "Create Project Error", NULL);
         return 0;
     }
     
-    SetProjectFileNames(&details);
+    SetProjectFileNames(details);
     
-    details.Paths.Root[0] = '\0';
-    GetWindowText(hProjRootPathEdit, details.Paths.Root, sizeof(details.Paths.Root));
+    details->Paths.Root[0] = '\0';
+    GetWindowText(hProjRootPathEdit, details->Paths.Root, sizeof(details->Paths.Root));
     
-    if(details.Paths.Root[0] == '\0')
+    if(dataForFlag == CREATE_PROJECT && details->Paths.Root[0] == '\0')
     {
         MessageBox(NULL, "Please provide a root path of the project!", "Create Project Error", NULL);
         return 0;
     }
     
-    GetWindowText(hSubstComboBox, details.SubStDriveLetter, sizeof(details.SubStDriveLetter));
+    GetWindowText(hSubstComboBox, details->SubStDriveLetter, sizeof(details->SubStDriveLetter));
     
-    details.Paths.Compiler[0] = '\0';
-    GetWindowText(hCompilerEdit, details.Paths.Compiler, sizeof(details.Paths.Compiler));
+    details->Paths.Compiler[0] = '\0';
+    GetWindowText(hCompilerEdit, details->Paths.Compiler, sizeof(details->Paths.Compiler));
     
-    if(details.Paths.Compiler[0] == '\0')
+    if(dataForFlag == CREATE_PROJECT && details->Paths.Compiler[0] == '\0')
     {
         MessageBox(NULL, "Please provide the application path to a compiler!", "Create Project Error", NULL);
         return 0;
     }
     
-    details.CompilerArgs[0] = '\0';
-    GetWindowText(hCompilerArgsEdit, details.CompilerArgs, sizeof(details.CompilerArgs));
+    details->CompilerArgs[0] = '\0';
+    GetWindowText(hCompilerArgsEdit, details->CompilerArgs, sizeof(details->CompilerArgs));
     
-    details.CompilerFlags[0] = '\0';
-    GetWindowText(hCompilerFlagsEdit, details.CompilerFlags, sizeof(details.CompilerFlags));
+    details->CompilerFlags[0] = '\0';
+    GetWindowText(hCompilerFlagsEdit, details->CompilerFlags, sizeof(details->CompilerFlags));
     
-    details.CompilerLinkerFlags[0] = '\0';
-    GetWindowText(hCompilerLinksEdit, details.CompilerLinkerFlags, sizeof(details.CompilerLinkerFlags));
+    details->CompilerLinkerFlags[0] = '\0';
+    GetWindowText(hCompilerLinksEdit, details->CompilerLinkerFlags, sizeof(details->CompilerLinkerFlags));
     
-    details.LinkFiles[0] = '\0';
-    GetWindowText(hLinkFilesEdit, details.LinkFiles, sizeof(details.LinkFiles));
+    details->LinkFiles[0] = '\0';
+    GetWindowText(hLinkFilesEdit, details->LinkFiles, sizeof(details->LinkFiles));
     
-    details.Paths.Debugger[0] = '\0';
+    details->Paths.Debugger[0] = '\0';
+    details->DebuggerFile[0] = '\0';
+    details->DebuggerArgs[0] = '\0';
     
-    GetWindowText(hDebuggerEdit, details.Paths.Debugger, sizeof(details.Paths.Debugger));
+    GetWindowText(hDebuggerEdit, details->Paths.Debugger, sizeof(details->Paths.Debugger));
     
-    if(details.Paths.Debugger[0] != '\0')
+    if(details->Paths.Debugger[0] != '\0')
     {
-        details.DebuggerFile[0] = '\0';
-        GetFileName(details.DebuggerFile, sizeof(details.DebuggerFile), details.Paths.Debugger);
-        
-        details.DebuggerArgs[0] = '\0';
-        GetWindowText(hDebuggerArgsEdit, details.DebuggerArgs, sizeof(details.DebuggerArgs));
+        GetFileName(details->DebuggerFile, sizeof(details->DebuggerFile), details->Paths.Debugger);
+        GetWindowText(hDebuggerArgsEdit, details->DebuggerArgs, sizeof(details->DebuggerArgs));
     }
     
-    details.Paths.Editor[0] = '\0';
-    details.EditorArgs[0] = '\0';
-    GetWindowText(hEditorEdit, details.Paths.Editor, sizeof(details.Paths.Editor));
+    details->Paths.Editor[0] = '\0';
+    details->EditorArgs[0] = '\0';
+    GetWindowText(hEditorEdit, details->Paths.Editor, sizeof(details->Paths.Editor));
     
-    if(details.Paths.Editor[0] != '\0')
+    if(details->Paths.Editor[0] != '\0')
     {
-        GetWindowText(hEditorArgsEdit, details.EditorArgs, sizeof(details.EditorArgs));
+        GetWindowText(hEditorArgsEdit, details->EditorArgs, sizeof(details->EditorArgs));
     }
     
-    SetPaths(&details);
+    SetPaths(details);
+    
+    return 1;
+}
+
+bool32 SaveProject(HWND window)
+{
+    project_details projectDetails = {};
+    char saveFile[256] = "";
+    
+    if(!GetFormValues(&projectDetails, SAVE_PROJECT))
+    {
+        return 0;
+    }
+    
+    if(!ShowSaveFileDialog(window, saveFile, 256, SAVE_PROJECT))
+    {
+        return 0;
+    }
+    
+    if(!SaveData(&projectDetails, saveFile))
+    {
+        //MessageBox
+        return 0;
+    }
+    
+    return 1;
+}
+
+bool32 LoadProject(HWND window)
+{
+    project_details projectDetails = {};
+    
+    char loadFile[256] = "";
+    
+    if(!ShowOpenFileDialog(window, loadFile, 256, LOAD_PROJECT))
+    {
+        return 0;
+    }
+    
+    if(!LoadData(&projectDetails, loadFile))
+    {
+        //MessageBox
+        return 0;
+    }
+    
+    ResetForm(window);
+    FillForm(&projectDetails);
+    
+    return 1;
+}
+
+bool32 SaveDefaults(HWND window)
+{
+    project_details defaults = {};
+    char saveFile[256] = "";
+    
+    if(!GetFormValues(&defaults, SAVE_DEFAULTS))
+    {
+        return 0;
+    }
+    
+    if(!ShowSaveFileDialog(window, saveFile, 256, SAVE_DEFAULTS))
+    {
+        return 0;
+    }
+    
+    if(!SaveData(&defaults, saveFile))
+    {
+        //MessageBox
+        return 0;
+    }
+    
+    return 1;
+}
+
+bool32 LoadDefaults(HWND window)
+{
+    project_details defaults = {};
+    
+    char loadFile[256] = "";
+    
+    if(!ShowOpenFileDialog(window, loadFile, 256, LOAD_DEFAULTS))
+    {
+        return 0;
+    }
+    
+    if(!LoadData(&defaults, loadFile))
+    {
+        //MessageBox
+        return 0;
+    }
+    
+    ResetForm(window);
+    FillForm(&defaults);
+    
+    return 1;
+}
+
+bool32 CreateProject(HWND window)
+{
+    project_details details = {};
+    
+    if(!GetFormValues(&details, CREATE_PROJECT))
+    {
+        return 0;
+    }
     
     if(!CreateProjectDirectories(&details.Paths))
     {
@@ -762,23 +902,6 @@ bool CreateProject(HWND window)
     return 1;
 }
 
-void ResetForm(HWND window)
-{
-    SetWindowText(hProjectNameEdit, "");
-    //hSubstComboBox
-    SetWindowText(hProjRootPathEdit, "");
-    SetWindowText(hCompilerEdit, "");
-    SetWindowText(hCompilerArgsEdit, "");
-    SetWindowText(hCompilerFlagsEdit, "");
-    SetWindowText(hCompilerLinksEdit, "");
-    SetWindowText(hLinkFilesEdit, "");
-    SetWindowText(hDebuggerEdit, "");
-    SetWindowText(hDebuggerArgsEdit, "");
-    SetWindowText(hEditorEdit, "");
-    SetWindowText(hEditorArgsEdit, "");
-    CheckDlgButton(window, APP_CKBOX_SHORTCUT, BST_UNCHECKED);
-}
-
 int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lpData)
 {
     switch (uMsg)
@@ -792,10 +915,45 @@ int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lp
     return 0;
 }
 
-bool ShowFileDialog(HWND window, char* filePath, DWORD maxPath)
+bool32 ShowSaveFileDialog(HWND window, char* filePath, DWORD maxPath, int saveReasonFlag)
 {
     OPENFILENAME ofn;
-    char szFile[MAX_PATH] = "";
+    char fileName[256] = "";
+    
+    ZeroMemory(&ofn, sizeof(ofn));
+    
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = window;
+    ofn.lpstrFile = fileName;
+    ofn.nMaxFile = sizeof(fileName);
+    
+    if(saveReasonFlag == SAVE_PROJECT)
+    {
+        ofn.lpstrFilter = "DPB Project Files (*.dpb)\0*.dpb"; //.dpb created to store project data.
+        ofn.lpstrDefExt = "dpb";
+    }
+    else
+    {
+        ofn.lpstrFilter = "DPB Defaults Files (*.dft)\0*.dft"; //.dft created to store defaults.
+        ofn.lpstrDefExt = "dft";
+    }
+    
+    ofn.nFilterIndex = 1;
+    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+    
+    if (GetSaveFileName(&ofn))
+    {
+        strcpy_s(filePath, maxPath, fileName);
+        return 1;
+    }
+    
+    return 0;
+}
+
+bool32 ShowOpenFileDialog(HWND window, char* filePath, DWORD maxPath, int openReasonFlag)
+{
+    OPENFILENAME ofn;
+    char szFile[256] = "";
     
     // Initialize OPENFILENAME structure
     ZeroMemory(&ofn, sizeof(ofn));
@@ -805,7 +963,26 @@ bool ShowFileDialog(HWND window, char* filePath, DWORD maxPath)
     ofn.nMaxFile = sizeof(szFile);
     
     // File type filters
-    ofn.lpstrFilter = "Files (*.exe;*.bat)\0*.exe;*.bat\0";
+    switch(openReasonFlag)
+    {
+        case APP_PATH: //Filter for .exe or .bat files
+        {
+            ofn.lpstrFilter = "Files (*.exe;*.bat)\0*.exe;*.bat\0";
+            break;
+        }
+        
+        case LOAD_PROJECT: //Filter for .dpb files
+        {
+            ofn.lpstrFilter = "Project Files (*.dpb)\0*.dpb\0";
+            break;
+        }
+        
+        case LOAD_DEFAULTS: //Filter for .dft files
+        {
+            ofn.lpstrFilter = "Defaults Files (*.dft)\0*.dft\0";
+            break;
+        }
+    }
     
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
@@ -826,7 +1003,7 @@ bool ShowFileDialog(HWND window, char* filePath, DWORD maxPath)
     return 0;
 }
 
-bool ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
+bool32 ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
 {
     BROWSEINFO bi;
     char displayName[MAX_PATH];
@@ -856,7 +1033,7 @@ bool ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath)
     return 0;
 }
 
-void CreateMenu(HWND window)
+void CreateMenuBar(HWND window)
 {
     HMENU hProjectMenu = CreateMenu();
     AppendMenu(hProjectMenu, MF_STRING, APP_MENU_FILE_SAVE_PROJECT, "&Save");
@@ -1153,7 +1330,7 @@ void CreateMainForm(HWND window)
 
 void CreateWindowForm(HWND window)
 {
-    CreateMenu(window);
+    CreateMenuBar(window);
     CreateMainForm(window);
 }
 
@@ -1187,24 +1364,40 @@ LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam
             {
                 case APP_MENU_FILE_SAVE_PROJECT:
                 {
+                    if(SaveProject(window))
+                    {
+                        //do something
+                    }
                     
                     break;
                 }
                 
                 case APP_MENU_FILE_LOAD_PROJECT:
                 {
+                    if(LoadProject(window))
+                    {
+                        //do something
+                    }
                     
                     break;
                 }
                 
                 case APP_MENU_FILE_SAVE_DEFAULTS:
                 {
+                    if(SaveDefaults(window))
+                    {
+                        //do something
+                    }
                     
                     break;
                 }
                 
                 case APP_MENU_FILE_LOAD_DEFAULTS:
                 {
+                    if(LoadDefaults(window))
+                    {
+                        //do something
+                    }
                     
                     break;
                 }
@@ -1231,7 +1424,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam
                 {
                     if(hWord == BN_CLICKED)
                     {
-                        if(ShowFileDialog(window, filePath, sizeof(filePath)))
+                        if(ShowOpenFileDialog(window, filePath, sizeof(filePath), APP_PATH))
                         {
                             SetWindowText(hCompilerEdit, filePath);
                         }
@@ -1244,7 +1437,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam
                 {
                     if(hWord == BN_CLICKED)
                     {
-                        if(ShowFileDialog(window, filePath, sizeof(filePath)))
+                        if(ShowOpenFileDialog(window, filePath, sizeof(filePath), APP_PATH))
                         {
                             SetWindowText(hDebuggerEdit, filePath);
                         }
@@ -1257,7 +1450,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT uMsg, WPARAM wParam, LPARAM lParam
                 {
                     if(hWord == BN_CLICKED)
                     {
-                        if(ShowFileDialog(window, filePath, sizeof(filePath)))
+                        if(ShowOpenFileDialog(window, filePath, sizeof(filePath), APP_PATH))
                         {
                             SetWindowText(hEditorEdit, filePath);
                         }

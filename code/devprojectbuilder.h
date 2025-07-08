@@ -14,17 +14,17 @@ extern "C" {
     
 #define STRICT
     
-#define APP_FORM_X 20
-#define APP_FORM_LINE_HEIGHT 20
-#define APP_FORM_LINE_START_Y 20
-#define APP_FORM_LINE_GAP 10
-#define APP_FORM_LABEL_WIDTH 150
-#define APP_FORM_SEC_ITEM_X 180
-#define APP_FORM_EDIT_WIDTH 500
-#define APP_FORM_DIALOG_BTN_X 690
+#define APP_FORM_X                20
+#define APP_FORM_LINE_HEIGHT      20
+#define APP_FORM_LINE_START_Y     20
+#define APP_FORM_LINE_GAP         10
+#define APP_FORM_LABEL_WIDTH      150
+#define APP_FORM_SEC_ITEM_X       180
+#define APP_FORM_EDIT_WIDTH       500
+#define APP_FORM_DIALOG_BTN_X     690
 #define APP_FORM_DIALOG_BTN_WIDTH 30
-#define APP_FORM_CTRL_BTN_X 530
-#define APP_FORM_CTRL_BTN_WIDTH 70
+#define APP_FORM_CTRL_BTN_X       530
+#define APP_FORM_CTRL_BTN_WIDTH   70
     
     //Menus
 #define APP_MENU_FILE_SAVE_PROJECT  1000
@@ -53,6 +53,13 @@ extern "C" {
 #define APP_BTN_CREATE              2601
 #define APP_BTN_RESET               2602
 #define APP_CKBOX_SHORTCUT          2701
+    
+#define CREATE_PROJECT 0
+#define SAVE_PROJECT   1
+#define SAVE_DEFAULTS  2
+#define LOAD_PROJECT   3
+#define LOAD_DEFAULTS  4
+#define APP_PATH       5
     
 #include <windows.h>
 #include <wingdi.h>
@@ -101,16 +108,6 @@ extern "C" {
         char EditorArgs[256];
     }project_details;
     
-    typedef struct DEFAULT_INPUTS
-    {
-        char SubStDriveLetter[2];
-        char RootPath[256];
-        char Compiler[256];
-        char CompilerFlags[256];
-        char LinkerFlags[256];
-        char EditorCMD[256];
-    }default_inputs;
-    
     typedef struct CMD_SHORTCUT_INFO
     {
         char DesktopPath[256];
@@ -120,51 +117,63 @@ extern "C" {
         char Description[256];
     }cmd_shortcut_info;
     
-    bool32 IsLetter(char Letter);
-    bool32 IsSpecialCharacter(char Character);
-    void ToUpperCase(char *Str);
-    void ToLowerCase(char *Str);
-    bool32 IsDriveSpecified(char *Path);
-    void StripSpaces(char *Str, int SizeOfStr);
-    void InsertSubString(char *Str, int SizeOfStr, int StartReplaceIndex, char *SubStr, int SizeOfSubStr);
-    void AppendString(char *Str, int SizeOfStr, char *AppendStr, int StartIndexOfAppendStr);
-    void StrSpecifierSub(char *Str, int SizeOfStr, project_details *Details);
+    int StrLen(char *str);
+    bool32 IsLetter(char letter);
+    bool32 IsSpecialCharacter(char character);
+    void ToUpperCase(char *str);
+    void ToLowerCase(char *str);
+    bool32 IsDriveSpecified(char *path);
+    bool32 ContainsSpace(char *str);
+    void StripSpaces(char *str, int sizeOfStr);
+    void InsertSubString(char *str, int sizeOfStr, int startReplaceIndex, char *subStr, int sizeOfSubStr);
+    void AppendString(char *str, int sizeOfStr, char *appendStr, int startIndexOfAppendStr);
+    void StrSpecifierSub(char *str, int sizeOfStr, project_details *details);
     void GetShortCutInfo(cmd_shortcut_info *Info, project_details *Details);
     HRESULT CreateLauncherCMDShortcut(project_details *Details);
     bool32 CreateHeaderFile(project_details *Details);
     bool32 CreateCPPFile(project_details *Details);
     bool32 CreateProjectFiles(project_details *Details);
-    bool32 CreateStartupFile(project_details *Details);
-    bool32 CreateBuildFile(project_details *Details);
-    bool32 SaveDefaults(default_inputs *Defaults, char *FileName);
-    bool32 GetDefaultsFromFile(default_inputs *Defaults, char *FileName);
+    bool32 CreateStartBatFile(project_details *Details);
+    bool32 CreateBuildBatFile(project_details *Details);
+    bool32 CreateBatFiles(project_details *Details);
+    bool32 SaveData(project_details *Data, char *FileName);
+    bool32 LoadData(project_details *Data, char *FileName);
     void GetDesktopPath(char *Path);
+    int CreateDir(char *Path);
     bool32 RemoveDir(char *Path);
     bool32 CreateProjectDirectories(project_paths *Paths);
     void SetProjectFileNames(project_details *Details);
     void SetPaths(project_details *Details);
-    void PrintPaths(project_paths *Paths);
-    void PrintProjectDetails(project_details *Details);
-    void PrintDefaultDetails(default_inputs *Defaults);
-    void DisplayHelp(void);
-    void AskQuestion(char *Question, char *Detail, int SizeOfDetail);
-    void GetProjectName(char *ProjectName, int SizeOfProjectName);
-    void GetRootPath(char *Detail, int SizeOfDetail, char *Default, int SizeOfDefault);
-    void GetSubStrDriveLetter(char *SubSt, char *Default);
-    void GetCompilerPath(char *Detail, int SizeOfDetail, char *Default);
-    void GetIDECMLCommand(char *Detail, int SizeofDetail, char *Default);
-    void GetCompilerFlags(char *Detail, int SizeOfDetail, char *Default);
-    void GetLinkerFlags(char *Detail, int SizeOfDetail, char *Default);
-    void AskStartupQuestions(project_details *Details, default_inputs *Defaults);
-    void AskBuildQuestions(project_details *Details, default_inputs *Defaults);
-    void AskDefaultQuestions(default_inputs *Defaults);
-    int GetProjectConfirmation(project_details *Details);
-    int GetDefaultConfirmation(default_inputs *Defaults);
-    void CreateProject(project_details *ProjectDetails, default_inputs *Defaults);
-    bool32 CreateDefaults(default_inputs *Defaults, char *DefaultsFileName);
-    bool32 DeleteDefaults(default_inputs *Defaults, char *DefaultFileName);
-    void DefaultsMenu(default_inputs *Defaults, bool32 *HasDefaults, char *DefaultsFileName);
-    void MainMenu(project_details *Details, default_inputs *Defaults, bool32 *IsDefaultsSet, char *DefaultsFileName);
+    void GetFileName(char *fileName, int sizeOfFileName, char *filePath);
+    void ResetForm(HWND window);
+    void FillForm(project_details *details);
+    bool32 GetFormValues(project_details *details, int dataForFlag);
+    bool32 SaveProject(HWND window);
+    bool32 LoadProject(HWND window);
+    bool32 SaveDefaults(HWND window);
+    bool32 LoadDefaults(HWND window);
+    bool32 CreateProject(HWND window);
+    int CALLBACK BrowseCallbackProc(HWND window, UINT uMsg, LPARAM lParam, LPARAM lpData);
+    bool32 ShowSaveFileDialog(HWND window, char* filePath, DWORD maxPath, int saveReasonFlag);
+    bool32 ShowOpenFileDialog(HWND window, char* filePath, DWORD maxPath, int openReasonFlag);
+    bool32 ShowFolderDialog(HWND window, char* folderPath, DWORD maxPath);
+    void CreateMenuBar(HWND window);
+    void CreateProjectNameLine(HWND window, int yPos);
+    void CreateProjectRootPathLine(HWND window, int yPos);
+    void CreateSubstLine(HWND window, int yPos);
+    void CreateCompilerLine(HWND window, int yPos);
+    void CreateCompilerArgsLine(HWND window, int yPos);
+    void CreateCompilerFlagsLine(HWND window, int yPos);
+    void CreateCompilerLinksLine(HWND window, int yPos);
+    void CreateLinkFilesLine(HWND window, int yPos);
+    void CreateDebuggerLine(HWND window, int yPos);
+    void CreateDebuggerArgsLine(HWND window, int yPos);
+    void CreateEditorLine(HWND window, int yPos);
+    void CreateEditorArgsLine(HWND window, int yPos);
+    void CreateShortCutLine(HWND window, int yPos);
+    void CreateControlsLine(HWND window, int yPos);
+    void CreateMainForm(HWND window);
+    void CreateWindowForm(HWND window);
     
 #ifdef __cplusplus
 }
